@@ -127,14 +127,22 @@ function resolveWorkspacePath(ctx: Context, record: EnhanceRequest): string | un
   return workspacePathFromRegistry(ctx, sessionId)
 }
 
-function classifyToolText(text: string, isError: boolean): EnhanceErrorCode | undefined {
+/** `ctx.tools.execute` reports tool failures and aborts as results, never by throwing. */
+function isFailure(result: ToolExecutionResult, text: string): boolean {
+  return result.isError || text.startsWith('Error:')
+}
+
+/** Only meaningful for failed results: successful text may quote these phrases. */
+function classifyFailure(text: string): 'not_git' | 'too_large' | 'timeout' | undefined {
   const lower = text.toLowerCase()
   if (lower.includes('not managed by git') || lower.includes('not a git repository')) return 'not_git'
   if (lower.includes('too large to index') || (lower.includes('exceeds the') && lower.includes('mb'))) return 'too_large'
-  if (text.startsWith('Error:') || isError) return 'index_failed'
-  if (lower.includes('tool unavailable')) return 'upstream'
+  if (lower.includes('timed out') || lower.includes('timeout') || lower.includes('tool call aborted')) return 'timeout'
   return undefined
 }
+
+const INDEX_TIMEOUT_MESSAGE = 'Indexing timed out. Raise toolCallTimeoutMs on the bce-tool MCP entry.'
+const ENHANCE_TIMEOUT_MESSAGE = `Enhancement timed out (${ENHANCE_TIMEOUT_MS / 1000}s). Add --no-webbrowser-enhance-prompt to the bce-tool MCP args if the review page is blocking.`
 
 function isAbortError(error: unknown): boolean {
   if (error instanceof Error && error.name === 'AbortError') return true
@@ -191,18 +199,15 @@ export async function enhancePrompt(
         query: prompt,
       }, signal)
     } catch (error) {
-      if (isAbortError(error)) {
-        return fail('timeout', 'Indexing timed out. Raise toolCallTimeoutMs on the bce-tool MCP entry.')
-      }
+      if (isAbortError(error)) return fail('index_timeout', INDEX_TIMEOUT_MESSAGE)
       const message = error instanceof Error ? error.message : String(error)
       return fail('index_failed', message)
     }
     const searchText = contentText(searchResult)
-    const searchCode = classifyToolText(searchText, searchResult.isError)
-    if (searchCode === 'not_git' || searchCode === 'too_large') {
-      return fail(searchCode, searchText || searchCode)
-    }
-    if (searchCode !== undefined) {
+    if (isFailure(searchResult, searchText)) {
+      const searchCode = classifyFailure(searchText)
+      if (searchCode === 'timeout') return fail('index_timeout', INDEX_TIMEOUT_MESSAGE)
+      if (searchCode !== undefined) return fail(searchCode, searchText)
       return fail('index_failed', searchText || 'search_context failed')
     }
   } else {
@@ -213,7 +218,11 @@ export async function enhancePrompt(
   const onParentAbort = () => enhanceAbort.abort()
   if (signal.aborted) enhanceAbort.abort()
   else signal.addEventListener('abort', onParentAbort, { once: true })
-  const timer = setTimeout(() => enhanceAbort.abort(), ENHANCE_TIMEOUT_MS)
+  let timedOut = false
+  const timer = setTimeout(() => {
+    timedOut = true
+    enhanceAbort.abort()
+  }, ENHANCE_TIMEOUT_MS)
 
   let enhanceResult: ToolExecutionResult
   try {
@@ -223,12 +232,7 @@ export async function enhancePrompt(
       conversation_history: '',
     }, enhanceAbort.signal)
   } catch (error) {
-    if (isAbortError(error) || enhanceAbort.signal.aborted) {
-      return fail(
-        'timeout',
-        `Enhancement timed out (${ENHANCE_TIMEOUT_MS / 1000}s). Add --no-webbrowser-enhance-prompt to the bce-tool MCP args if the review page is blocking.`,
-      )
-    }
+    if (timedOut || isAbortError(error)) return fail('timeout', ENHANCE_TIMEOUT_MESSAGE)
     const message = error instanceof Error ? error.message : String(error)
     return fail('upstream', message)
   } finally {
@@ -236,12 +240,12 @@ export async function enhancePrompt(
     signal.removeEventListener('abort', onParentAbort)
   }
 
+  if (timedOut) return fail('timeout', ENHANCE_TIMEOUT_MESSAGE)
   const text = contentText(enhanceResult)
-  const enhanceCode = classifyToolText(text, enhanceResult.isError)
-  if (enhanceCode === 'not_git' || enhanceCode === 'too_large' || enhanceCode === 'timeout') {
-    return fail(enhanceCode, text || enhanceCode)
-  }
-  if (enhanceCode !== undefined) {
+  if (isFailure(enhanceResult, text)) {
+    const enhanceCode = classifyFailure(text)
+    if (enhanceCode === 'timeout') return fail('timeout', ENHANCE_TIMEOUT_MESSAGE)
+    if (enhanceCode !== undefined) return fail(enhanceCode, text)
     return fail('upstream', text || 'enhance_prompt failed')
   }
   if (text.length === 0) return fail('upstream', 'enhance_prompt returned empty text')

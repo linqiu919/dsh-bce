@@ -88,7 +88,20 @@ export function registerEnhanceRpc(ctx: Context): void {
       }
     }
 
-    const handler = (payload: unknown, signal: AbortSignal) => enhancePrompt(ctx, payload, signal)
+    const handler = async (payload: unknown, signal: AbortSignal): Promise<RpcResult<EnhanceOk>> => {
+      try {
+        return await enhancePrompt(ctx, payload, signal)
+      } catch (error) {
+        return {
+          ok: false,
+          error: {
+            code: 'upstream',
+            message: error instanceof Error ? error.message : String(error),
+            details: {},
+          },
+        }
+      }
+    }
 
     const register = connection.fetch?.register
     if (typeof register === 'function') {

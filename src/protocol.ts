@@ -18,6 +18,7 @@ export type EnhanceErrorCode =
   | 'no_workspace'
   | 'empty_prompt'
   | 'index_failed'
+  | 'index_timeout'
   | 'not_git'
   | 'too_large'
   | 'timeout'

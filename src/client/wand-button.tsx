@@ -8,18 +8,18 @@ import { RPC_CHANNEL, RPC_ENDPOINT, type EnhanceOk, type RpcResult } from '../pr
 import { getRestore, setRestore, subscribeRestore } from './restore-store.ts'
 
 type SessionListLike = {
-  current?: string
-  byId?: Record<string, { cwd?: string }>
+  current?: string | undefined
+  byId?: Readonly<Record<string, { cwd?: string | undefined } | undefined>> | undefined
 }
 
 type WorkspaceListLike = {
   items?: readonly {
-    workspaceId?: string
-    id?: string
-    path?: string
-    sessionIds?: readonly string[]
-  }[]
-  recentWorkspaceId?: string
+    workspaceId?: string | undefined
+    id?: string | undefined
+    path?: string | undefined
+    sessionIds?: readonly string[] | undefined
+  }[] | undefined
+  recentWorkspaceId?: string | undefined
 }
 
 type InputLike = {
@@ -27,11 +27,24 @@ type InputLike = {
   phase?: string
 }
 
+type SelectHook<S> = <T>(selector: (state: S) => T) => T
+
 type WandProps = PropsLocale<typeof LOCALE_NAMESPACE> & {
+  sessionId?: string
   session?: unknown
   input?: InputLike
   inputActions?: { setDraft: (text: string) => void }
-  useInput?: <T>(selector: (state: InputLike) => T) => T
+  useInput?: SelectHook<InputLike>
+  useSession?: SelectHook<unknown>
+  useSessions?: SelectHook<SessionListLike>
+  useWorkspaces?: SelectHook<WorkspaceListLike>
+}
+
+/** Paths read through the slot's store hooks during render. */
+type HookedPaths = {
+  session: string | undefined
+  sessions: string | undefined
+  workspaces: string | undefined
 }
 
 type ListHolder = {
@@ -60,48 +73,38 @@ function snapshotOf(holder: ListHolder | undefined): unknown {
   }
 }
 
-function hookValue(props: object, name: string): unknown {
-  const hook = (props as Record<string, unknown>)[name]
-  if (typeof hook !== 'function') return undefined
-  try {
-    return (hook as (select: (state: unknown) => unknown) => unknown)((state) => state)
-  } catch {
-    return undefined
-  }
+function sessionsPath(sessions: SessionListLike | undefined, sessionId: string | undefined): string | undefined {
+  const id = sessionId ?? nonEmpty(sessions?.current)
+  return id === undefined ? undefined : cwdOf(sessions?.byId?.[id])
 }
 
-function resolveWorkspace(
-  props: WandProps,
-  extras: { sessions: ListHolder | undefined; workspaces: ListHolder | undefined },
-): WorkspaceRef {
-  const session = hookValue(props, 'useSession') ?? props.session
-  const sessions = (hookValue(props, 'useSessions') ?? snapshotOf(extras.sessions)) as SessionListLike | undefined
-  const workspaces = (hookValue(props, 'useWorkspaces') ?? snapshotOf(extras.workspaces)) as WorkspaceListLike | undefined
-  const sessionId = nonEmpty((props as Record<string, unknown>).sessionId) ?? nonEmpty(sessions?.current)
-
-  const fromSession = cwdOf(session)
-  if (fromSession !== undefined) return { path: fromSession, sessionId }
-
-  if (sessionId !== undefined) {
-    const rowCwd = cwdOf(sessions?.byId?.[sessionId])
-    if (rowCwd !== undefined) return { path: rowCwd, sessionId }
-  }
-
+function workspacesPath(workspaces: WorkspaceListLike | undefined, sessionId: string | undefined): string | undefined {
   const items = workspaces?.items ?? []
   if (sessionId !== undefined) {
-    const owned = items.find((item) => item.sessionIds?.includes(sessionId))
-    const ownedPath = nonEmpty(owned?.path)
-    if (ownedPath !== undefined) return { path: ownedPath, sessionId }
+    const owned = nonEmpty(items.find((item) => item.sessionIds?.includes(sessionId))?.path)
+    if (owned !== undefined) return owned
   }
-
   const recentId = nonEmpty(workspaces?.recentWorkspaceId)
-  if (recentId !== undefined) {
-    const recent = items.find((item) => item.workspaceId === recentId || item.id === recentId)
-    const recentPath = nonEmpty(recent?.path)
-    if (recentPath !== undefined) return { path: recentPath, sessionId }
-  }
+  if (recentId === undefined) return undefined
+  return nonEmpty(items.find((item) => item.workspaceId === recentId || item.id === recentId)?.path)
+}
 
-  return { path: undefined, sessionId }
+/** Reads store snapshots only; hook values must be captured during render. */
+function resolveWorkspace(
+  props: WandProps,
+  hooked: HookedPaths,
+  extras: { sessions: ListHolder | undefined; workspaces: ListHolder | undefined },
+): WorkspaceRef {
+  const sessions = snapshotOf(extras.sessions) as SessionListLike | undefined
+  const workspaces = snapshotOf(extras.workspaces) as WorkspaceListLike | undefined
+  const sessionId = nonEmpty(props.sessionId) ?? nonEmpty(sessions?.current)
+  const path = hooked.session
+    ?? cwdOf(props.session)
+    ?? hooked.sessions
+    ?? sessionsPath(sessions, sessionId)
+    ?? hooked.workspaces
+    ?? workspacesPath(workspaces, sessionId)
+  return { path, sessionId }
 }
 
 function messageFor(code: string, t: (key: BceLocaleKey) => string): string {
@@ -113,6 +116,7 @@ function messageFor(code: string, t: (key: BceLocaleKey) => string): string {
     case 'too_large': return t('wand.tooLarge')
     case 'timeout': return t('wand.timeout')
     case 'index_failed': return t('wand.indexFailed')
+    case 'index_timeout': return t('wand.indexTimeout')
     case 'no_rpc': return t('wand.noRpc')
     default: return t('wand.upstream')
   }
@@ -192,8 +196,15 @@ function WandButton(props: WandProps & {
 
   const draftFromHook = props.useInput?.((state) => state.draft)
   const draft = typeof draftFromHook === 'string' ? draftFromHook : (props.input?.draft ?? '')
+  const draftRef = React.useRef(draft)
+  draftRef.current = draft
   const extras = { sessions: sessionsStore, workspaces: workspacesStore }
-  const sessionId = nonEmpty((props as Record<string, unknown>).sessionId)
+  const sessionId = nonEmpty(props.sessionId)
+  const hooked: HookedPaths = {
+    session: props.useSession?.((state) => cwdOf(state)),
+    sessions: props.useSessions?.((state) => sessionsPath(state, sessionId)),
+    workspaces: props.useWorkspaces?.((state) => workspacesPath(state, sessionId)),
+  }
 
   const empty = draft.trim().length === 0
   const disabled = busy || empty
@@ -219,7 +230,7 @@ function WandButton(props: WandProps & {
     setBusy(true)
     announce('busy', t('wand.enhancing'))
     const prompt = draft.trim()
-    const workspace = resolveWorkspace(props, extras)
+    const workspace = resolveWorkspace(props, hooked, extras)
     try {
       if (workspace.path === undefined && workspace.sessionId === undefined) {
         announce('error', t('wand.noWorkspace'))
@@ -237,6 +248,10 @@ function WandButton(props: WandProps & {
       })
       const parsed = parseEnhanceResult(result)
       if (parsed?.ok === true) {
+        if (draftRef.current.trim() !== prompt) {
+          announce('error', t('wand.draftChanged'))
+          return
+        }
         inputActions?.setDraft(parsed.value.text)
         const previous = getRestore()
         const sameSession = previous === undefined

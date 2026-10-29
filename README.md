@@ -19,7 +19,7 @@ English · [简体中文](README.zh.md)
 `dsh-bce` adds an enhance icon next to the composer's attach button. One click incrementally indexes the current workspace through the Better Context Engine (BCE) MCP server already configured in your profile, then rewrites the draft into a context-rich prompt.
 
 > [!NOTE]
-> The plugin stores no BCE base URL or token. Credentials stay on the MCP entry of the active profile and never reach the browser.
+> The plugin stores no BCE base URL or token. Credentials live only in the active profile's MCP entry and are used by bce-tool on the host; they are never sent to the UI (the web page or the Desktop window).
 
 ## Demo
 
@@ -175,7 +175,7 @@ dsh plugin --profile web add "$(pwd)"
 | Cmd/Ctrl+Z does not revert | `setDraft` is outside the composer undo stack | Use **Restore original**. |
 | Markdown is not rendered in the composer | The composer is a plain-text draft with file-reference chips | Keep enhancer output as plain text. |
 
-**Why not call BCE from the browser?** The BCE service has no CORS layer, and the token must stay on the host. The enhance icon calls the host RPC, which executes the configured MCP tools.
+**Why doesn't the UI call BCE directly?** The BCE service has no CORS layer, and the token must stay on the host. The enhance icon calls the host RPC, which executes the configured MCP tools.
 
 ## License
 

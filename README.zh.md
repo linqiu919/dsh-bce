@@ -19,7 +19,7 @@
 `dsh-bce` 在 Composer 附件按钮旁增加一个增强图标。点击后，插件通过当前 profile 已配置的 Better Context Engine（BCE）MCP 对工作区做增量索引，再把草稿重写为带有上下文的提示词。
 
 > [!NOTE]
-> 插件不保存 BCE 服务地址或 Token。凭证仅存在于当前 profile 的 MCP 配置中，不会进入浏览器。
+> 插件不保存 BCE 服务地址或 Token。凭证只保存在当前 profile 的 MCP 配置中，仅由 Host 端的 bce-tool 使用，不会下发到前端界面（web 页面或 Desktop 窗口）。
 
 ## 演示
 
@@ -175,7 +175,7 @@ dsh plugin --profile web add "$(pwd)"
 | Cmd/Ctrl+Z 无法撤销 | `setDraft` 不进入 Composer 撤销栈 | 使用 **还原**。 |
 | 输入框不渲染 Markdown | Composer 是纯文本草稿加文件引用 chip | 增强结果使用纯文本。 |
 
-**为什么不从浏览器直连 BCE？** BCE 服务端没有 CORS，且 Token 不能进入浏览器。增强图标通过 Host RPC 调用已配置的 MCP 工具。
+**为什么前端不直连 BCE？** BCE 服务端没有 CORS，而且 Token 只能留在 Host 端。增强图标通过 Host RPC 调用已配置的 MCP 工具。
 
 ## 许可
 

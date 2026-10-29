@@ -1,6 +1,6 @@
 {
   "name": "dsh-bce",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "DeepSeek Harness plugin that incrementally indexes the current workspace via the configured BCE MCP and enhances composer prompts.",
   "keywords": [
     "deepseek-harness",

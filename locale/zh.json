@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "BCE 提示增强",
+    "description": "基于已配置的 BCE MCP，增量索引当前工作区并增强 Composer 提示词。"
+  }
+}

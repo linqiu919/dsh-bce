@@ -1,0 +1,5 @@
+# dsh-bce bundle overlay. Row id must match package.json name and the client NAMESPACE.
+# No config: BCE credentials live on the already-installed bce-tool MCP entry.
+- insert:
+    - id: dsh-bce
+      name: dsh-bce

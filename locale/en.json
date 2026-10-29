@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "BCE Prompt Enhance",
+    "description": "Incrementally indexes the current workspace via the configured BCE MCP and enhances the composer prompt."
+  }
+}

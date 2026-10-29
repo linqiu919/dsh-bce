@@ -18,6 +18,10 @@
   "bugs": {
     "url": "https://github.com/linqiu919/dsh-bce/issues"
   },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
   "icon": "./icon.png",
   "type": "module",
   "main": "lib/index.js",

@@ -6,7 +6,7 @@
 
 **Context-aware prompt enhancement for the DeepSeek Harness composer, powered by your Better Context Engine MCP.**
 
-[![Version](https://img.shields.io/badge/version-0.1.0-4D6BFE)](package.json) [![License](https://img.shields.io/badge/license-MIT-3DA639)](#license) [![Node.js](https://img.shields.io/badge/node-%5E22.19%20%7C%7C%20%3E%3D24-339933?logo=node.js&logoColor=white)](#requirements) [![Platform](https://img.shields.io/badge/DeepSeek%20Harness-web%20%7C%20Desktop-1F2937)](https://github.com/deepseek-ai/deepseek-harness)
+[![npm](https://img.shields.io/npm/v/dsh-bce?color=4D6BFE)](https://www.npmjs.com/package/dsh-bce) [![License](https://img.shields.io/badge/license-MIT-3DA639)](#license) [![Node.js](https://img.shields.io/badge/node-%5E22.19%20%7C%7C%20%3E%3D24-339933?logo=node.js&logoColor=white)](#requirements) [![Platform](https://img.shields.io/badge/DeepSeek%20Harness-web%20%7C%20Desktop-1F2937)](https://github.com/deepseek-ai/deepseek-harness)
 
 English · [简体中文](README.zh.md)
 

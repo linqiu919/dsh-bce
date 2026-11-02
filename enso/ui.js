@@ -11,20 +11,23 @@ const en = {
   'wand.mcpMissing': 'BCE MCP was not found. Add bce-tool to this profile with --no-webbrowser-enhance-prompt.',
   'wand.notGit': 'This folder is not a Git repository. bce-tool only indexes Git projects.',
   'wand.tooLarge': 'This project is too large to index. Trim it with .gitignore or .bceignore.',
-  'wand.timeout': 'Enhancement timed out (90s). Add --no-webbrowser-enhance-prompt to the bce-tool MCP args, or switch to a faster enhancement model in BCE.',
+  'wand.timeout': 'Timed out (90s). Indexing and enhancement share this limit. Add --no-webbrowser-enhance-prompt if a review page is blocking, or switch to a faster enhancement model in BCE.',
   'wand.indexFailed': 'Indexing failed. Check the bce-tool MCP logs.',
-  'wand.indexTimeout': 'Indexing timed out. Raise toolCallTimeoutMs on the bce-tool MCP entry.',
+  'wand.indexTimeout': 'Indexing used up the 90s limit shared with enhancement.',
   'wand.draftChanged': 'The draft changed while enhancing, so it was not replaced.',
   'wand.upstream': 'Enhancement failed. Check MCP tool permissions and bce-tool logs.',
   'wand.noIndex': 'Enhanced without a fresh index (search_context was not found).',
   'wand.done': 'Prompt enhanced.',
   'wand.noRpc': 'Enhancement is not available. Confirm dsh-bce is installed in this profile and restart.',
   'wand.restore': 'Restore original',
-  'wand.hasReferences': 'The draft contains file or session references, so it cannot be replaced.',
+  'wand.hasReferences': 'This draft has file or session references. Enso cannot replace the text and keep those chips.',
+  'wand.tooBig': 'The enhanced prompt is over Enso\'s 32KB draft limit, so it was not written back.',
   'wand.draftBusy': 'The composer is composing or locked. Try again in a moment.',
   'wand.noSession': 'Open a conversation first.',
   'wand.noComposer': 'The composer is not available in this window.',
-  'wand.hostTimeout': 'Enso stopped the call at its 120 second limit. Indexing and enhancement share that budget.',
+  'wand.copy': 'Copy enhanced text',
+  'wand.copied': 'Copied the enhanced prompt.',
+  'wand.copyFailed': 'Could not copy to the clipboard.',
 }
 
 const zh = {
@@ -35,20 +38,23 @@ const zh = {
   'wand.mcpMissing': '未检测到 BCE MCP。请在当前 profile 配置 bce-tool，并加上 --no-webbrowser-enhance-prompt。',
   'wand.notGit': '当前目录不是 Git 仓库。bce-tool 默认只索引 Git 项目。',
   'wand.tooLarge': '项目过大，无法索引。请用 .gitignore 或 .bceignore 排除大目录后再试。',
-  'wand.timeout': '增强超时（90 秒）。请确认 MCP 启动参数包含 --no-webbrowser-enhance-prompt，或在 BCE 中换用更快的增强模型。',
+  'wand.timeout': '已超时（90 秒）。索引和增强共用这个时限。请确认已加 --no-webbrowser-enhance-prompt，或在 BCE 中换用更快的增强模型。',
   'wand.indexFailed': '索引失败。请查看 bce-tool MCP 日志。',
-  'wand.indexTimeout': '索引超时。请在 bce-tool MCP 配置中调大 toolCallTimeoutMs。',
+  'wand.indexTimeout': '索引用尽了与增强共用的 90 秒。',
   'wand.draftChanged': '增强期间草稿已修改，未覆盖。',
   'wand.upstream': '增强失败。请检查 MCP 工具权限和 bce-tool 日志。',
   'wand.noIndex': '已增强，但未做索引（未找到 search_context）。',
   'wand.done': '提示已增强。',
   'wand.noRpc': '增强服务未就绪。请确认当前 profile 已安装 dsh-bce 并重启。',
   'wand.restore': '还原',
-  'wand.hasReferences': '草稿里有文件或会话引用，不能整体替换。',
+  'wand.hasReferences': '草稿含有文件或会话引用。Enso 不能只替换正文并保留这些引用。',
+  'wand.tooBig': '增强结果超过 Enso 的 32KB 草稿上限，没有写回。',
   'wand.draftBusy': '输入框正在组字或已锁定，请稍后再试。',
   'wand.noSession': '当前没有会话。',
   'wand.noComposer': '当前窗口没有可用的输入框。',
-  'wand.hostTimeout': 'Enso 在 120 秒上限处中断了调用。索引和增强共用这个预算。',
+  'wand.copy': '复制增强结果',
+  'wand.copied': '已复制增强后的提示。',
+  'wand.copyFailed': '无法写入剪贴板。',
 }
 
 const tables = { en, zh }
@@ -99,7 +105,6 @@ export function messageFor(code, lang) {
     case 'empty_prompt': return table['wand.empty']
     case 'not_git': return table['wand.notGit']
     case 'too_large': return table['wand.tooLarge']
-    case 'timeout': return table['wand.timeout']
     case 'index_failed': return table['wand.indexFailed']
     case 'index_timeout': return table['wand.indexTimeout']
     case 'no_rpc':
@@ -108,13 +113,26 @@ export function messageFor(code, lang) {
     case 'draft_changed':
     case 'DRAFT_CHANGED': return table['wand.draftChanged']
     case 'DRAFT_HAS_REFERENCES': return table['wand.hasReferences']
+    case 'TOO_LARGE': return table['wand.tooBig']
     case 'DRAFT_BUSY': return table['wand.draftBusy']
     case 'NO_SESSION': return table['wand.noSession']
     case 'NO_COMPOSER': return table['wand.noComposer']
     case 'TIMEOUT':
-    case 'ABORTED': return table['wand.hostTimeout']
+    case 'ABORTED':
+    case 'timeout': return table['wand.timeout']
+    case 'GESTURE_REQUIRED':
+    case 'copy_failed': return table['wand.copyFailed']
     default: return table['wand.upstream']
   }
+}
+
+function isOversize(error) {
+  const code = codeOf(error)
+  if (code === 'TOO_LARGE') return true
+  const message = error !== null && typeof error === 'object' && typeof error.message === 'string'
+    ? error.message
+    : ''
+  return code === 'INVALID_ARGS' && /32\s?KB|32KB|过大/.test(message)
 }
 
 function codeOf(error) {
@@ -133,9 +151,6 @@ export async function enhanceDraft(enso, sessionId, liveDraft, lang) {
   } catch (error) {
     const code = codeOf(error) || 'upstream'
     return { ok: false, code, message: messageFor(code, language) }
-  }
-  if (snap?.hasReferences === true) {
-    return { ok: false, code: 'DRAFT_HAS_REFERENCES', message: messageFor('DRAFT_HAS_REFERENCES', language) }
   }
   const prompt = typeof snap?.text === 'string' ? snap.text.trim() : ''
   if (prompt.length === 0) {
@@ -162,7 +177,10 @@ export async function enhanceDraft(enso, sessionId, liveDraft, lang) {
       expect: { generation: snap.generation, rev: snap.rev },
     })
   } catch (error) {
-    const code = codeOf(error) || 'upstream'
+    const code = isOversize(error) ? 'TOO_LARGE' : (codeOf(error) || 'upstream')
+    if (code === 'DRAFT_HAS_REFERENCES' || code === 'TOO_LARGE') {
+      return { ok: false, code, message: messageFor(code, language), copyText: result.text }
+    }
     return { ok: false, code, message: messageFor(code, language) }
   }
   return {
@@ -393,7 +411,7 @@ export function onLoad(enso) {
   const { React } = enso
   const h = React.createElement.bind(React)
   const style = document.createElement('style')
-  style.dataset.plugin = 'linqiu919.dshbce'
+  style.dataset.plugin = 'dsh.bce'
   style.textContent = STYLE
   document.head.appendChild(style)
 
@@ -403,6 +421,7 @@ export function onLoad(enso) {
     const [status, setStatus] = React.useState('')
     const [level, setLevel] = React.useState('idle')
     const [localeTick, setLocaleTick] = React.useState(0)
+    const [copyText, setCopyText] = React.useState('')
     const lock = React.useRef(false)
     const draftRef = React.useRef(text)
     draftRef.current = text
@@ -440,9 +459,11 @@ export function onLoad(enso) {
       lock.current = true
       setBusy(true)
       announce('busy', table['wand.enhancing'])
+      setCopyText('')
       try {
         const result = await enhanceDraft(enso, sessionId, () => draftRef.current, lang)
         if (result.ok !== true) {
+          setCopyText(typeof result.copyText === 'string' ? result.copyText : '')
           announce('error', result.message)
           return
         }
@@ -452,6 +473,21 @@ export function onLoad(enso) {
       } finally {
         lock.current = false
         setBusy(false)
+      }
+    }
+
+    const onCopy = async () => {
+      if (copyText.length === 0 || lock.current) return
+      try {
+        const copied = await enso.dispatch('plugin.call', { method: 'copy', args: { text: copyText } })
+        if (copied?.ok === true) {
+          setCopyText('')
+          announce('ok', table['wand.copied'])
+          return
+        }
+        announce('error', messageFor(typeof copied?.code === 'string' ? copied.code : 'copy_failed', lang))
+      } catch (error) {
+        announce('error', messageFor(codeOf(error) || 'copy_failed', lang))
       }
     }
 
@@ -497,6 +533,13 @@ export function onLoad(enso) {
         onMouseDown: (event) => { event.preventDefault() },
         onClick: () => { void onRestore() },
       }, table['wand.restore']) : null,
+      copyText.length > 0 && !busy ? h('button', {
+        type: 'button',
+        className: 'dshbce-restore',
+        title: table['wand.copy'],
+        onMouseDown: (event) => { event.preventDefault() },
+        onClick: () => { void onCopy() },
+      }, table['wand.copy']) : null,
       h('span', { className: 'dshbce-live', 'aria-live': 'polite' }, status),
     )
   }

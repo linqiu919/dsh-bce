@@ -3,12 +3,16 @@ import { readFileSync } from 'node:fs'
 import { mock, describe, it } from 'node:test'
 import {
   ENHANCE_TIMEOUT_MS,
+  HOST_LEAD_MS,
   classifyFailure,
+  copyText,
   enhance,
   pickServer,
+  waitBudget,
 } from '../enso/main.mjs'
 
-const ENHANCE_TIMEOUT_MESSAGE = `Enhancement timed out (${ENHANCE_TIMEOUT_MS / 1000}s). Add --no-webbrowser-enhance-prompt to the bce-tool MCP args if the review page is blocking.`
+const ENHANCE_TIMEOUT_MESSAGE = `Enhancement timed out (${ENHANCE_TIMEOUT_MS / 1000}s). Indexing and rewriting share this limit. Add --no-webbrowser-enhance-prompt to the bce-tool MCP args if the review page is blocking.`
+const INDEX_TIMEOUT_MESSAGE = 'Indexing used up the 90s limit shared with enhancement.'
 
 function deferred() {
   let resolve
@@ -184,40 +188,36 @@ describe('enhance', () => {
     })
   })
 
-  it('maps an indexing timeout without applying the 90s enhance budget', async () => {
+  it('stops an index that uses up the shared 90s budget without aborting the MCP call', async () => {
     mock.timers.enable({ apis: ['setTimeout'] })
     try {
       const search = deferred()
-      let settled = false
       const tools = [
         { server: 'bce', name: 'enhance_prompt' },
         { server: 'bce', name: 'search_context' },
       ]
       const { enso, ctx } = host({
         tools,
-        call: async (_server, tool) => {
-          if (tool === 'search_context') return search.promise
-          return { content: 'better', isError: false }
-        },
+        call: async () => search.promise,
       })
       const pending = enhance(enso, { prompt: 'x' }, ctx)
-      pending.then(() => { settled = true }, () => { settled = true })
-      mock.timers.tick(ENHANCE_TIMEOUT_MS)
+      for (let i = 0; i < 5; i++) await Promise.resolve()
+      mock.timers.tick(1_000)
       await Promise.resolve()
-      assert.equal(settled, false)
       assert.equal(search.settled, false)
-      search.resolve({ content: 'Error: tool call aborted', isError: true })
+      mock.timers.tick(ENHANCE_TIMEOUT_MS)
       assert.deepEqual(await pending, {
         ok: false,
         code: 'index_timeout',
-        message: 'Indexing timed out. Raise toolCallTimeoutMs on the bce-tool MCP entry.',
+        message: INDEX_TIMEOUT_MESSAGE,
       })
+      assert.equal(search.settled, false)
     } finally {
       mock.timers.reset()
     }
   })
 
-  it('stops waiting for enhance_prompt at 90s without aborting the MCP call', async () => {
+  it('stops waiting for enhance_prompt inside the same 90s budget without aborting the MCP call', async () => {
     mock.timers.enable({ apis: ['setTimeout'] })
     try {
       const rewrite = deferred()
@@ -232,11 +232,12 @@ describe('enhance', () => {
         },
       })
       const pending = enhance(enso, { prompt: 'x' }, ctx)
-      for (let i = 0; i < 5; i++) await Promise.resolve()
-      mock.timers.tick(ENHANCE_TIMEOUT_MS - 1)
-      await Promise.resolve()
+      for (let i = 0; i < 10; i++) await new Promise((resolve) => process.nextTick(resolve))
+      mock.timers.tick(1_000)
+      await new Promise((resolve) => process.nextTick(resolve))
       assert.equal(rewrite.settled, false)
-      mock.timers.tick(1)
+      mock.timers.tick(ENHANCE_TIMEOUT_MS)
+      for (let i = 0; i < 10; i++) await new Promise((resolve) => process.nextTick(resolve))
       assert.deepEqual(await pending, {
         ok: false,
         code: 'timeout',
@@ -276,20 +277,56 @@ describe('enhance', () => {
   })
 })
 
+describe('waitBudget', () => {
+  it('is the shared 90s cap minus the host lead', () => {
+    assert.equal(ENHANCE_TIMEOUT_MS, 90_000)
+    assert.equal(HOST_LEAD_MS, 1_500)
+    assert.equal(waitBudget(0), 88_500)
+    assert.equal(waitBudget(80_000), 8_500)
+    assert.equal(waitBudget(90_000), 0)
+  })
+})
+
+describe('copyText', () => {
+  it('writes the enhanced prompt through the host clipboard', async () => {
+    const written = []
+    const enso = { ui: { clipboard: { writeText: async (text) => { written.push(text) } } } }
+    assert.deepEqual(await copyText(enso, { text: 'better' }), { ok: true })
+    assert.deepEqual(written, ['better'])
+    assert.equal((await copyText(enso, { text: '  ' })).code, 'empty_prompt')
+  })
+})
+
 describe('manifest', () => {
   const manifest = JSON.parse(readFileSync(new URL('../enso/enso-plugin.json', import.meta.url), 'utf8'))
+  const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
+  const tsdown = readFileSync(new URL('../tsdown.config.ts', import.meta.url), 'utf8')
 
   it('is a directly installable Enso 0.2.13 plugin with the minimum permissions', () => {
     assert.equal(manifest.schemaVersion, 1)
-    assert.equal(manifest.id, 'linqiu919.dshbce')
+    assert.equal(manifest.id, 'dsh.bce')
     assert.equal(manifest.version, '0.1.1')
     assert.equal(manifest.engines.enso, '>=0.2.13')
     assert.equal(manifest.main, 'main.mjs')
     assert.equal(manifest.renderer, 'ui.js')
-    assert.deepEqual(manifest.permissions, ['ui.slot', 'composer.draft', 'mcp.call'])
+    assert.deepEqual(manifest.permissions, ['ui.slot', 'composer.draft', 'mcp.call', 'ui.clipboard'])
     assert.deepEqual(manifest.mcp.tools, ['search_context', 'enhance_prompt'])
-    assert.deepEqual(manifest.contributes.methods, [{ name: 'enhance', timeoutMs: 120_000 }])
+    assert.deepEqual(manifest.contributes.methods, [{ name: 'enhance', timeoutMs: 90_000 }])
     assert.equal(manifest.contributes.configuration[0].key, 'server')
     assert.equal(manifest.id.includes('-'), false)
+  })
+
+  it('leaves the DeepSeek Harness package contents alone', () => {
+    assert.deepEqual(pkg.files, [
+      'lib/index.js',
+      'lib/index.d.ts',
+      'lib/client.js',
+      'locale/*.json',
+      'icon.png',
+      'cordis.patch.yml',
+    ])
+    assert.equal(pkg.files.some((entry) => entry.includes('enso')), false)
+    assert.equal(tsdown.includes('enso/'), false)
+    assert.equal(tsdown.includes("entry: ['src/index.ts']"), true)
   })
 })

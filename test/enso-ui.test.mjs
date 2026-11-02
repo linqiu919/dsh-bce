@@ -24,10 +24,15 @@ function composer(snap, replace = async () => ({ rev: 'r2' })) {
 }
 
 describe('carried copy and visuals', () => {
-  it('keeps every DSH wand string', () => {
+  it('keeps every DSH wand string except the Enso timeout copy', () => {
+    const adapted = new Set(['wand.timeout', 'wand.indexTimeout'])
     for (const match of locales.matchAll(/'(wand\.[^']+)': '([^']*)'/g)) {
+      if (adapted.has(match[1])) continue
       assert.equal(ui.includes(match[2]), true, match[1])
     }
+    assert.match(ui, /Timed out \(90s\)/)
+    assert.match(ui, /已超时（90 秒）/)
+    assert.match(ui, /索引用尽了与增强共用的 90 秒/)
   })
 
   it('keeps the wand paths, the ring, and the theme fallbacks', () => {
@@ -73,9 +78,12 @@ describe('messageFor', () => {
     assert.equal(messageFor('not_git', 'zh'), '当前目录不是 Git 仓库。bce-tool 默认只索引 Git 项目。')
     assert.match(messageFor('DRAFT_HAS_REFERENCES', 'zh'), /引用/)
     assert.match(messageFor('DRAFT_HAS_REFERENCES', 'en'), /references/)
+    assert.match(messageFor('TOO_LARGE', 'en'), /32KB/)
+    assert.match(messageFor('TOO_LARGE', 'zh'), /32KB/)
     assert.equal(messageFor('DRAFT_CHANGED', 'zh'), messageFor('draft_changed', 'zh'))
     assert.match(messageFor('DRAFT_BUSY', 'en'), /locked/)
-    assert.equal(messageFor('TIMEOUT', 'en'), messageFor('ABORTED', 'en'))
+    assert.equal(messageFor('TIMEOUT', 'en'), messageFor('timeout', 'en'))
+    assert.match(messageFor('TIMEOUT', 'en'), /90s/)
     assert.match(messageFor('upstream', 'zh'), /增强失败/)
   })
 })
@@ -139,30 +147,46 @@ describe('enhanceDraft', () => {
       message: '增强期间草稿已修改，未覆盖。',
     })
 
+    let replaced = false
     const referenced = {
-      composer: composer({ text: 'fix it', generation: 'c1', rev: 'r1', hasReferences: true }),
-      dispatch: async () => {
-        throw new Error('should not run')
-      },
+      composer: composer({ text: 'fix @file it', generation: 'c1', rev: 'r1', hasReferences: true }, async () => {
+        replaced = true
+        throw Object.assign(new Error('refs'), { code: 'DRAFT_HAS_REFERENCES' })
+      }),
+      dispatch: async () => ({ ok: true, text: 'better @file' }),
     }
-    const blocked = await enhanceDraft(referenced, 'c1', 'fix it', 'en')
+    const blocked = await enhanceDraft(referenced, 'c1', 'fix @file it', 'en')
+    assert.equal(replaced, true)
     assert.equal(blocked.ok, false)
     assert.equal(blocked.code, 'DRAFT_HAS_REFERENCES')
     assert.match(blocked.message, /references/)
+    assert.equal(blocked.copyText, 'better @file')
+
+    const oversized = {
+      composer: composer({ text: 'fix it', generation: 'c1', rev: 'r1', hasReferences: false }, async () => {
+        throw Object.assign(new Error('text 不合法或超过 32KB'), { code: 'INVALID_ARGS' })
+      }),
+      dispatch: async () => ({ ok: true, text: 'x'.repeat(40_000) }),
+    }
+    const huge = await enhanceDraft(oversized, 'c1', 'fix it', 'zh')
+    assert.equal(huge.code, 'TOO_LARGE')
+    assert.match(huge.message, /32KB/)
+    assert.equal(huge.copyText.length, 40_000)
 
     const rejected = await enhanceDraft(changed, 'c1', 'fix it', 'en')
     assert.equal(rejected.code, 'DRAFT_CHANGED')
     assert.equal(rejected.message, 'The draft changed while enhancing, so it was not replaced.')
+    assert.equal(rejected.copyText, undefined)
   })
 
   it('maps a host method timeout and a missing workspace from the backend', async () => {
     const timedOut = {
       composer: composer({ text: 'fix it', generation: 'c1', rev: 'r1', hasReferences: false }),
       dispatch: async () => {
-        throw Object.assign(new Error('插件调用超时（120000ms）'), { code: 'TIMEOUT' })
+        throw Object.assign(new Error('插件调用超时（90000ms）'), { code: 'TIMEOUT' })
       },
     }
-    assert.match((await enhanceDraft(timedOut, 's', 'fix it', 'zh')).message, /120/)
+    assert.match((await enhanceDraft(timedOut, 's', 'fix it', 'zh')).message, /90 秒/)
 
     const missing = {
       composer: composer({ text: 'fix it', generation: 'c1', rev: 'r1', hasReferences: false }),
@@ -197,7 +221,7 @@ describe('onLoad', () => {
       assert.equal(registered[0].slot, 'composer.left')
       assert.equal(typeof registered[0].component, 'function')
       assert.match(style.textContent, /dshbce-btn/)
-      assert.equal(style.dataset.plugin, 'linqiu919.dshbce')
+      assert.equal(style.dataset.plugin, 'dsh.bce')
       dispose()
       assert.deepEqual(removed, [true])
     } finally {

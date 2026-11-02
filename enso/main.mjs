@@ -2,20 +2,26 @@
 //
 // Abort limitation (Enso 0.2.13): `enso.mcp.call(server, tool, args)` takes no
 // AbortSignal. An in-flight call is cancelled only when the host aborts the
-// invocation signal — the renderer method timing out (max 120s), an explicit
-// cancel, or Enso's own 120s MCP timer (`plugin-mcp-cancel`). Returning a
-// timeout result does not abort the call. Throwing would, because a failed UI
-// call runs `invocations.cancel`, but that failure also counts toward the
-// 5-strike / 30s UI circuit breaker. The 90s enhance budget therefore stops
-// waiting and reports `timeout`; `enhance_prompt` itself keeps running until
-// it finishes or Enso's 120s MCP cap cancels it. Indexing has no plugin-side
-// timer: it uses that same MCP cap. Index and enhance share one 120s method
-// budget, which is Enso's maximum for a renderer method.
+// invocation — the renderer method timing out, an explicit cancel, or Enso's
+// own 120s MCP timer (`plugin-mcp-cancel`). The manifest caps this method at
+// 90s, and index plus rewrite share that budget. The plugin stops waiting
+// HOST_LEAD_MS early and returns `index_timeout` or `timeout`, so the UI can
+// show that message before Enso cancels the call and surfaces a generic
+// TIMEOUT. Returning does not itself abort the MCP call. Throwing would,
+// because a failed UI call runs `invocations.cancel`, but that failure also
+// counts toward the 5-strike / 30s UI circuit breaker.
 
 export const ENHANCE_TIMEOUT_MS = 90_000
+/** Settle before the host's matching 90s cancel so the friendly code wins. */
+export const HOST_LEAD_MS = 1_500
 
-const INDEX_TIMEOUT_MESSAGE = 'Indexing timed out. Raise toolCallTimeoutMs on the bce-tool MCP entry.'
-const ENHANCE_TIMEOUT_MESSAGE = `Enhancement timed out (${ENHANCE_TIMEOUT_MS / 1000}s). Add --no-webbrowser-enhance-prompt to the bce-tool MCP args if the review page is blocking.`
+const INDEX_TIMEOUT_MESSAGE = 'Indexing used up the 90s limit shared with enhancement.'
+const ENHANCE_TIMEOUT_MESSAGE = `Enhancement timed out (${ENHANCE_TIMEOUT_MS / 1000}s). Indexing and rewriting share this limit. Add --no-webbrowser-enhance-prompt to the bce-tool MCP args if the review page is blocking.`
+
+/** Milliseconds left in the shared 90s budget, excluding the host lead. */
+export function waitBudget(elapsedMs) {
+  return Math.max(0, ENHANCE_TIMEOUT_MS - HOST_LEAD_MS - elapsedMs)
+}
 
 /**
  * Servers that expose `enhance_prompt`: configured name, else a name containing
@@ -120,7 +126,23 @@ async function preferredServer(enso) {
     : ''
 }
 
+export async function copyText(enso, args) {
+  const text = typeof args?.text === 'string' ? args.text : ''
+  if (text.trim().length === 0) return fail('empty_prompt', 'nothing to copy')
+  try {
+    await enso.ui.clipboard.writeText(text)
+  } catch (error) {
+    const code = typeof error === 'object' && error !== null && typeof error.code === 'string'
+      ? error.code
+      : 'upstream'
+    const message = error instanceof Error ? error.message : String(error)
+    return fail(code, message)
+  }
+  return { ok: true }
+}
+
 export async function enhance(enso, args, ctx) {
+  const started = Date.now()
   const prompt = typeof args?.prompt === 'string' ? args.prompt.trim() : ''
   if (prompt.length === 0) return fail('empty_prompt', 'prompt is empty')
   if (typeof ctx?.projectRoot !== 'string' || ctx.projectRoot.length === 0) {
@@ -154,12 +176,18 @@ export async function enhance(enso, args, ctx) {
 
   let warning
   if (picked.hasSearch) {
+    const indexBudget = waitBudget(Date.now() - started)
+    if (indexBudget <= 0) return fail('index_timeout', INDEX_TIMEOUT_MESSAGE)
     let searched
     try {
-      searched = await enso.mcp.call(picked.server, 'search_context', {
-        project_root_path: ctx.projectRoot,
-        query: prompt,
-      })
+      searched = await raceTimeout(
+        enso.mcp.call(picked.server, 'search_context', {
+          project_root_path: ctx.projectRoot,
+          query: prompt,
+        }),
+        indexBudget,
+        ctx.signal,
+      )
     } catch (error) {
       if (isTimeoutError(error)) return fail('index_timeout', INDEX_TIMEOUT_MESSAGE)
       const message = error instanceof Error ? error.message : String(error)
@@ -176,6 +204,8 @@ export async function enhance(enso, args, ctx) {
     warning = 'no_index'
   }
 
+  const enhanceBudget = waitBudget(Date.now() - started)
+  if (enhanceBudget <= 0) return fail('timeout', ENHANCE_TIMEOUT_MESSAGE)
   let enhanced
   try {
     enhanced = await raceTimeout(
@@ -184,7 +214,7 @@ export async function enhance(enso, args, ctx) {
         prompt,
         conversation_history: '',
       }),
-      ENHANCE_TIMEOUT_MS,
+      enhanceBudget,
       ctx.signal,
     )
   } catch (error) {
@@ -206,4 +236,5 @@ export async function enhance(enso, args, ctx) {
 
 export function activate(enso) {
   enso.renderer.handle('enhance', (args, ctx) => enhance(enso, args, ctx))
+  enso.renderer.handle('copy', (args) => copyText(enso, args))
 }

@@ -10,6 +10,8 @@
 
 [English](README.md) · 简体中文
 
+<sub>友链 · <a href="https://github.com/J3n5en/EnsoCode"><img src="docs/ensocode.png" alt="" width="18" height="18" valign="middle" /> EnsoCode</a></sub>
+
 [演示](#演示) · [功能](#功能) · [工作原理](#工作原理) · [安装](#安装) · [EnsoCode](#ensocode) · [使用](#使用) · [常见问题](#常见问题)
 
 </div>
@@ -183,10 +185,10 @@ https://github.com/linqiu919/dsh-bce/tree/main/enso
 
 ```sh
 enso-server plugin install https://github.com/linqiu919/dsh-bce/tree/main/enso
-enso-server plugin enable linqiu919.dshbce
+enso-server plugin enable dsh.bce
 ```
 
-插件 id 是 `linqiu919.dshbce`。Enso 的 id 是反向域名，不能包含连字符，所以 `linqiu919.dsh-bce` 会被拒绝。更新检查只比较清单里的 `version`，不会自动安装。
+插件 id 是 `dsh.bce`。Enso 要求带点的反向域名（`^[a-z][a-z0-9]*(\.[a-z0-9]+)+$`），因此不带命名空间的 `dshbce` 会被拒绝。更新检查只比较清单里的 `version`，不会自动安装。
 
 ### 3. 使用
 
@@ -199,8 +201,8 @@ enso-server plugin enable linqiu919.dshbce
 | 插槽 | `conversation.input.left` | `composer.left` |
 | 工作区 | 会话 cwd 与工作区注册表 | 会话的 `projectRoot`。没有本机项目时提示 **请先打开一个工作区。** |
 | 写回草稿 | `setDraft`（不进撤销栈） | `replaceDraft`，并核对点击前读到的 generation / rev。草稿在此期间被改过，或含有文件、会话引用时，不会覆盖。 |
-| 索引时限 | MCP `toolCallTimeoutMs` | 插件不为索引另设定时器。Enso 把单次 MCP 调用和整次点击都限制在 120 秒，`timeoutMs` 已设到这个上限。首次索引越久，留给重写的时间越少。 |
-| 增强时限 | 90 秒后中止工具调用 | 插件在 90 秒后停止等待。`mcp.call` 没有取消参数，进行中的 `enhance_prompt` 要等到 Enso 自己的 120 秒 MCP 上限，或整次调用的 120 秒预算取消 invocation 时才会被中止。 |
+| 索引与增强时限 | 索引走 MCP `toolCallTimeoutMs`，重写在 90 秒中止 | 整次点击共用 90 秒（`timeoutMs: 90000`）。插件提前 1.5 秒返回，以便界面显示明确的超时文案。`mcp.call` 仍然没有取消参数，进行中的工具要等这 90 秒的宿主预算触发后才会被中止。 |
+| 含引用或超过 32KB 的草稿 | `setDraft` 直接写文本 | `readDraft` 只给纯文本和 `hasReferences`。没有分段、补丁或部分编辑接口，`replaceDraft` 在草稿含有文件或会话引用时直接拒绝，`setText` 会丢掉引用卡片。魔棒不改草稿，并提供 **复制增强结果**（宿主剪贴板，上限 1MB）。 |
 | 语言 | profile 语言（zh / en） | 宿主若提供 `enso.locale` 则用它。Enso 0.2.13 没有这项，因此先看页面语言，再看浏览器语言。 |
 | 安装 | `dsh plugin add` | 上面的 GitHub 目录链接。安装和启用是两步。 |
 

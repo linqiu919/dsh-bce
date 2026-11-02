@@ -10,7 +10,9 @@
 
 English · [简体中文](README.zh.md)
 
-[Demo](#demo) · [Features](#features) · [How it works](#how-it-works) · [Installation](#installation) · [Usage](#usage) · [FAQ](#faq)
+<sub>Friends · <a href="https://github.com/J3n5en/EnsoCode"><img src="docs/ensocode.png" alt="" width="18" height="18" valign="middle" /> EnsoCode</a></sub>
+
+[Demo](#demo) · [Features](#features) · [How it works](#how-it-works) · [Installation](#installation) · [EnsoCode](#ensocode) · [Usage](#usage) · [FAQ](#faq)
 
 </div>
 
@@ -153,6 +155,58 @@ cd dsh-bce
 pnpm install && pnpm build
 dsh plugin --profile web add "$(pwd)"
 ```
+
+## EnsoCode
+
+The same wand is also an [EnsoCode](https://github.com/J3n5en/EnsoCode) plugin in [`enso/`](enso/). It keeps the DeepSeek Harness look and interaction — the 26px round button, the conic-gradient ring, status colors, restore, and the zh/en copy — and calls Enso's plugin APIs instead of the DSH host RPC. It needs EnsoCode **0.2.13** or newer. The files in `enso/` are plain ESM, so installing from GitHub does not build this package.
+
+### 1. Register the bce-tool MCP
+
+In **Settings → MCP**, add bce-tool and enable it. On Desktop, point `command` at an absolute `npx` — the GUI `PATH` usually omits nvm.
+
+| Field | Value |
+| :--- | :--- |
+| Command | `npx` |
+| Args | `-y bce-tool --base-url https://your-bce-host --token *** --no-webbrowser-enhance-prompt` |
+
+`--no-webbrowser-enhance-prompt` is required. Without it, `enhance_prompt` waits on a local review page and times out. Add `--allow-non-git` when the folder is not a Git repository. The BCE URL and token stay in this MCP entry; the plugin never reads them.
+
+If more than one server exposes `enhance_prompt`, open the plugin settings (the gear on its row) and set **MCP server**. Leave it empty to prefer a server whose name contains `bce`, otherwise the first match.
+
+### 2. Install and enable
+
+Settings → Plugins → Enso plugins → paste this link:
+
+```text
+https://github.com/linqiu919/dsh-bce/tree/main/enso
+```
+
+A newly installed plugin stays off until you enable it. From a shell:
+
+```sh
+enso-server plugin install https://github.com/linqiu919/dsh-bce/tree/main/enso
+enso-server plugin enable dsh.bce
+```
+
+The id is `dsh.bce`. Enso requires a dotted reverse-DNS id (`^[a-z][a-z0-9]*(\.[a-z0-9]+)+$`), so the bare name `dshbce` is rejected. Enso's update check compares the manifest `version` and does not install on its own.
+
+### 3. Use it
+
+Open a project, type a non-empty draft, and click the wand on the left of the composer. **Restore original** puts back the first draft of this enhancement chain. Another click, without editing in between, keeps that same original.
+
+### Differences from the DeepSeek Harness build
+
+| | DeepSeek Harness | EnsoCode |
+| :--- | :--- | :--- |
+| Slot | `conversation.input.left` | `composer.left` |
+| Workspace | Session cwd and the workspace registry | The session's `projectRoot`. A session with no local project shows **Open a workspace first.** |
+| Draft write | `setDraft` (outside the undo stack) | `replaceDraft`, checked against the generation and rev read before the call. If the draft changed, or it contains file or session references, it is left as it is. |
+| Index and enhance budget | Indexing follows MCP `toolCallTimeoutMs`; the rewrite is aborted at 90s | One 90s cap for the whole click (`timeoutMs: 90000`). The plugin reports the timeout 1.5s early so the message stays specific. `mcp.call` still has no abort handle, so the in-flight tool is cancelled when that 90s host budget fires. |
+| Drafts with references, or over 32KB | `setDraft` writes the text | `readDraft` returns plain text only, plus `hasReferences`. There is no segment, patch, or partial-edit API, and `replaceDraft` refuses drafts that contain file or session references. `setText` would drop the chips. The wand leaves the draft alone and offers **Copy enhanced text** (host clipboard, 1MB). |
+| Language | Profile locale (zh / en) | `enso.locale` when the host exposes one. Enso 0.2.13 does not, so the button uses the page language, then the browser language. |
+| Install | `dsh plugin add` | The GitHub directory link above. Install and enable are separate steps. |
+
+Cmd/Ctrl+Z still does not undo a replaced draft. Use **Restore original**.
 
 ## Usage
 

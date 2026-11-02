@@ -10,7 +10,9 @@
 
 [English](README.md) · 简体中文
 
-[演示](#演示) · [功能](#功能) · [工作原理](#工作原理) · [安装](#安装) · [使用](#使用) · [常见问题](#常见问题)
+<sub>友链 · <a href="https://github.com/J3n5en/EnsoCode"><img src="docs/ensocode.png" alt="" width="18" height="18" valign="middle" /> EnsoCode</a></sub>
+
+[演示](#演示) · [功能](#功能) · [工作原理](#工作原理) · [安装](#安装) · [EnsoCode](#ensocode) · [使用](#使用) · [常见问题](#常见问题)
 
 </div>
 
@@ -153,6 +155,58 @@ cd dsh-bce
 pnpm install && pnpm build
 dsh plugin --profile web add "$(pwd)"
 ```
+
+## EnsoCode
+
+同一枚魔棒也作为 [EnsoCode](https://github.com/J3n5en/EnsoCode) 插件放在 [`enso/`](enso/)。外观和交互与 DeepSeek Harness 版一致：26px 圆形按钮、锥形渐变光环、状态颜色、还原，以及中英文案。底层换成 Enso 的插件 API，不再走 DSH Host RPC。需要 EnsoCode **0.2.13** 或更高版本。`enso/` 里是可直接安装的 ESM，从 GitHub 安装时不必构建本包。
+
+### 1. 注册 bce-tool MCP
+
+在 **设置 → MCP** 里添加并启用 bce-tool。桌面版请把命令写成 `npx` 的绝对路径，图形界面的 `PATH` 通常不含 nvm。
+
+| 字段 | 值 |
+| :--- | :--- |
+| 命令 | `npx` |
+| 参数 | `-y bce-tool --base-url https://your-bce-host --token *** --no-webbrowser-enhance-prompt` |
+
+必须带 `--no-webbrowser-enhance-prompt`，否则 `enhance_prompt` 会停在本地审查页直到超时。目录不是 Git 仓库时再加上 `--allow-non-git`。BCE 地址和 Token 只留在这条 MCP 配置里，插件读不到。
+
+有多个服务提供 `enhance_prompt` 时，打开插件行的齿轮，填写 **MCP server**。留空则优先名称含 `bce` 的服务，否则用第一个。
+
+### 2. 安装并启用
+
+设置 → 插件 → Enso plugins，粘贴：
+
+```text
+https://github.com/linqiu919/dsh-bce/tree/main/enso
+```
+
+新安装的插件默认停用，需要手动启用。命令行：
+
+```sh
+enso-server plugin install https://github.com/linqiu919/dsh-bce/tree/main/enso
+enso-server plugin enable dsh.bce
+```
+
+插件 id 是 `dsh.bce`。Enso 要求带点的反向域名（`^[a-z][a-z0-9]*(\.[a-z0-9]+)+$`），因此不带命名空间的 `dshbce` 会被拒绝。更新检查只比较清单里的 `version`，不会自动安装。
+
+### 3. 使用
+
+打开项目，在输入框写入非空草稿，点击左侧的魔棒。**还原** 写回这一轮连续增强之前的第一份草稿；中间没有改过字时，再次增强仍保留那一份原文。
+
+### 和 DeepSeek Harness 版的差异
+
+| | DeepSeek Harness | EnsoCode |
+| :--- | :--- | :--- |
+| 插槽 | `conversation.input.left` | `composer.left` |
+| 工作区 | 会话 cwd 与工作区注册表 | 会话的 `projectRoot`。没有本机项目时提示 **请先打开一个工作区。** |
+| 写回草稿 | `setDraft`（不进撤销栈） | `replaceDraft`，并核对点击前读到的 generation / rev。草稿在此期间被改过，或含有文件、会话引用时，不会覆盖。 |
+| 索引与增强时限 | 索引走 MCP `toolCallTimeoutMs`，重写在 90 秒中止 | 整次点击共用 90 秒（`timeoutMs: 90000`）。插件提前 1.5 秒返回，以便界面显示明确的超时文案。`mcp.call` 仍然没有取消参数，进行中的工具要等这 90 秒的宿主预算触发后才会被中止。 |
+| 含引用或超过 32KB 的草稿 | `setDraft` 直接写文本 | `readDraft` 只给纯文本和 `hasReferences`。没有分段、补丁或部分编辑接口，`replaceDraft` 在草稿含有文件或会话引用时直接拒绝，`setText` 会丢掉引用卡片。魔棒不改草稿，并提供 **复制增强结果**（宿主剪贴板，上限 1MB）。 |
+| 语言 | profile 语言（zh / en） | 宿主若提供 `enso.locale` 则用它。Enso 0.2.13 没有这项，因此先看页面语言，再看浏览器语言。 |
+| 安装 | `dsh plugin add` | 上面的 GitHub 目录链接。安装和启用是两步。 |
+
+Cmd/Ctrl+Z 仍然不能撤销被替换的草稿，请用 **还原**。
 
 ## 使用
 

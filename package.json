@@ -62,6 +62,7 @@
   "scripts": {
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
+    "test": "node --test test/enso-enhance.test.mjs test/enso-ui.test.mjs",
     "clean": "rm -rf lib",
     "prepare": "tsdown"
   },

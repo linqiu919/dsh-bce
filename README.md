@@ -10,7 +10,7 @@
 
 English · [简体中文](README.zh.md)
 
-[Demo](#demo) · [Features](#features) · [How it works](#how-it-works) · [Installation](#installation) · [Usage](#usage) · [FAQ](#faq)
+[Demo](#demo) · [Features](#features) · [How it works](#how-it-works) · [Installation](#installation) · [EnsoCode](#ensocode) · [Usage](#usage) · [FAQ](#faq)
 
 </div>
 
@@ -153,6 +153,58 @@ cd dsh-bce
 pnpm install && pnpm build
 dsh plugin --profile web add "$(pwd)"
 ```
+
+## EnsoCode
+
+The same wand is also an [EnsoCode](https://github.com/J3n5en/EnsoCode) plugin in [`enso/`](enso/). It keeps the DeepSeek Harness look and interaction — the 26px round button, the conic-gradient ring, status colors, restore, and the zh/en copy — and calls Enso's plugin APIs instead of the DSH host RPC. It needs EnsoCode **0.2.13** or newer. The files in `enso/` are plain ESM, so installing from GitHub does not build this package.
+
+### 1. Register the bce-tool MCP
+
+In **Settings → MCP**, add bce-tool and enable it. On Desktop, point `command` at an absolute `npx` — the GUI `PATH` usually omits nvm.
+
+| Field | Value |
+| :--- | :--- |
+| Command | `npx` |
+| Args | `-y bce-tool --base-url https://your-bce-host --token *** --no-webbrowser-enhance-prompt` |
+
+`--no-webbrowser-enhance-prompt` is required. Without it, `enhance_prompt` waits on a local review page and times out. Add `--allow-non-git` when the folder is not a Git repository. The BCE URL and token stay in this MCP entry; the plugin never reads them.
+
+If more than one server exposes `enhance_prompt`, open the plugin settings (the gear on its row) and set **MCP server**. Leave it empty to prefer a server whose name contains `bce`, otherwise the first match.
+
+### 2. Install and enable
+
+Settings → Plugins → Enso plugins → paste this link:
+
+```text
+https://github.com/linqiu919/dsh-bce/tree/main/enso
+```
+
+A newly installed plugin stays off until you enable it. From a shell:
+
+```sh
+enso-server plugin install https://github.com/linqiu919/dsh-bce/tree/main/enso
+enso-server plugin enable linqiu919.dshbce
+```
+
+The id is `linqiu919.dshbce`. Enso ids are reverse-DNS labels and cannot contain a hyphen, so `linqiu919.dsh-bce` is rejected. Enso's update check compares the manifest `version` and does not install on its own.
+
+### 3. Use it
+
+Open a project, type a non-empty draft, and click the wand on the left of the composer. **Restore original** puts back the first draft of this enhancement chain. Another click, without editing in between, keeps that same original.
+
+### Differences from the DeepSeek Harness build
+
+| | DeepSeek Harness | EnsoCode |
+| :--- | :--- | :--- |
+| Slot | `conversation.input.left` | `composer.left` |
+| Workspace | Session cwd and the workspace registry | The session's `projectRoot`. A session with no local project shows **Open a workspace first.** |
+| Draft write | `setDraft` (outside the undo stack) | `replaceDraft`, checked against the generation and rev read before the call. If the draft changed, or it contains file or session references, it is left as it is. |
+| Index budget | MCP `toolCallTimeoutMs` | No plugin-side index timer. Enso caps each MCP call at 120s, and the whole click at 120s. `timeoutMs` is set to that maximum. A long first index uses up the time left for the rewrite. |
+| Enhance budget | The tool call is aborted at 90s | The plugin stops waiting at 90s. `mcp.call` has no abort handle, so the in-flight `enhance_prompt` is cancelled only when Enso's 120s MCP cap fires, or when the 120s method budget cancels the invocation. |
+| Language | Profile locale (zh / en) | `enso.locale` when the host exposes one. Enso 0.2.13 does not, so the button uses the page language, then the browser language. |
+| Install | `dsh plugin add` | The GitHub directory link above. Install and enable are separate steps. |
+
+Cmd/Ctrl+Z still does not undo a replaced draft. Use **Restore original**.
 
 ## Usage
 

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "linqiu919.dshbce",
+  "name": "BCE Prompt Enhance",
+  "version": "0.1.1",
+  "description": "Composer wand that incrementally indexes the current project through the configured bce-tool MCP and rewrites the draft. Same interaction as dsh-bce, hosted by EnsoCode.",
+  "engines": { "enso": ">=0.2.13" },
+  "main": "main.mjs",
+  "renderer": "ui.js",
+  "permissions": ["ui.slot", "composer.draft", "mcp.call"],
+  "mcp": { "tools": ["search_context", "enhance_prompt"] },
+  "contributes": {
+    "methods": [{ "name": "enhance", "timeoutMs": 120000 }],
+    "configuration": [
+      {
+        "key": "server",
+        "title": "MCP server",
+        "description": "Optional MCP server name. Leave empty to prefer a server whose name contains \"bce\", otherwise the first server that provides enhance_prompt."
+      }
+    ]
+  }
+}

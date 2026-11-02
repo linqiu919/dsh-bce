@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "dsh.bce",
   "name": "BCE Prompt Enhance",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Composer wand that incrementally indexes the current project through the configured bce-tool MCP and rewrites the draft. Same interaction as dsh-bce, hosted by EnsoCode.",
   "engines": { "enso": ">=0.2.13" },
   "main": "main.mjs",

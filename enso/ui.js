@@ -266,6 +266,7 @@ export const STYLE = `
 }
 .dshbce-ring {
   position: absolute;
+  z-index: 2;
   inset: 0;
   border-radius: 50%;
   pointer-events: none;

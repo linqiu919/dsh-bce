@@ -305,7 +305,7 @@ describe('manifest', () => {
   it('is a directly installable Enso 0.2.13 plugin with the minimum permissions', () => {
     assert.equal(manifest.schemaVersion, 1)
     assert.equal(manifest.id, 'dsh.bce')
-    assert.equal(manifest.version, '0.1.1')
+    assert.equal(manifest.version, '0.1.2')
     assert.equal(manifest.engines.enso, '>=0.2.13')
     assert.equal(manifest.main, 'main.mjs')
     assert.equal(manifest.renderer, 'ui.js')

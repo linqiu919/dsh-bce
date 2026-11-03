@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { mock, describe, it } from 'node:test'
 import {
@@ -305,7 +306,8 @@ describe('manifest', () => {
   it('is a directly installable Enso 0.2.13 plugin with the minimum permissions', () => {
     assert.equal(manifest.schemaVersion, 1)
     assert.equal(manifest.id, 'dsh.bce')
-    assert.equal(manifest.version, '0.1.2')
+    assert.equal(manifest.version, '0.1.3')
+    assert.equal(manifest.icon, 'icon.png')
     assert.equal(manifest.engines.enso, '>=0.2.13')
     assert.equal(manifest.main, 'main.mjs')
     assert.equal(manifest.renderer, 'ui.js')
@@ -314,6 +316,11 @@ describe('manifest', () => {
     assert.deepEqual(manifest.contributes.methods, [{ name: 'enhance', timeoutMs: 90_000 }])
     assert.equal(manifest.contributes.configuration[0].key, 'server')
     assert.equal(manifest.id.includes('-'), false)
+    const icon = readFileSync(new URL('../enso/icon.png', import.meta.url))
+    assert.equal(
+      createHash('sha256').update(icon).digest('hex'),
+      '63c1d40b707b4deb5cd0dfde66b20df628a2ff1384f88890d70ef6595e7d6a44',
+    )
   })
 
   it('leaves the DeepSeek Harness package contents alone', () => {

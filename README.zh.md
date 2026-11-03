@@ -158,7 +158,7 @@ dsh plugin --profile web add "$(pwd)"
 
 ## EnsoCode
 
-同一枚魔棒也作为 [EnsoCode](https://github.com/J3n5en/EnsoCode) 插件放在 [`enso/`](enso/)。外观和交互与 DeepSeek Harness 版一致：26px 圆形按钮、锥形渐变光环、状态颜色、还原，以及中英文案。底层换成 Enso 的插件 API，不再走 DSH Host RPC。需要 EnsoCode **0.2.13** 或更高版本。`enso/` 里是可直接安装的 ESM，从 GitHub 安装时不必构建本包。
+同一枚魔棒也作为 [EnsoCode](https://github.com/J3n5en/EnsoCode) 插件放在 [`enso/`](enso/)。外观和交互与 DeepSeek Harness 版一致：26px 圆形按钮、锥形渐变光环、状态颜色、还原，以及中英文案。底层换成 Enso 的插件 API，不再走 DSH Host RPC。需要 EnsoCode **0.2.13** 或更高版本。`enso/` 里是可直接安装的 ESM（含 `icon.png`），从 GitHub 安装时不必构建本包。Enso 0.2.14 会在设置里显示这张图标。
 
 ### 1. 注册 bce-tool MCP
 

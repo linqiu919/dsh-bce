@@ -158,7 +158,7 @@ dsh plugin --profile web add "$(pwd)"
 
 ## EnsoCode
 
-The same wand is also an [EnsoCode](https://github.com/J3n5en/EnsoCode) plugin in [`enso/`](enso/). It keeps the DeepSeek Harness look and interaction — the 26px round button, the conic-gradient ring, status colors, restore, and the zh/en copy — and calls Enso's plugin APIs instead of the DSH host RPC. It needs EnsoCode **0.2.13** or newer. The files in `enso/` are plain ESM, so installing from GitHub does not build this package.
+The same wand is also an [EnsoCode](https://github.com/J3n5en/EnsoCode) plugin in [`enso/`](enso/). It keeps the DeepSeek Harness look and interaction — the 26px round button, the conic-gradient ring, status colors, restore, and the zh/en copy — and calls Enso's plugin APIs instead of the DSH host RPC. It needs EnsoCode **0.2.13** or newer. The files in `enso/` are plain ESM, including `icon.png`, so installing from GitHub does not build this package. Enso 0.2.14 shows that icon in Settings.
 
 ### 1. Register the bce-tool MCP
 

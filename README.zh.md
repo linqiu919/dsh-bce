@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/banner.png" alt="DeepSeek Harness 与 Better Context Engine" width="480" />
+<img src="docs/banner.png" alt="DeepSeek Harness 与 Better Context Engine" width="240" />
 
 # dsh-bce
 

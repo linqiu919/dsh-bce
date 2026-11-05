@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { describe, it } from 'node:test'
 import React from 'react'
 import {
+  STATUS_CLEAR_MS,
   STYLE,
   canRestore,
   enhanceDraft,
@@ -39,8 +40,10 @@ describe('carried copy and visuals', () => {
     const path = wand.match(/d="(m21\.64[^"]+)"/)?.[1]
     assert.ok(path)
     assert.equal(ui.includes(path), true)
-    assert.match(STYLE, /width: 26px/)
-    assert.match(STYLE, /border-radius: 50%/)
+    assert.match(STYLE, /\.dshbce-btn\s*\{[^}]*width: 28px/)
+    assert.match(STYLE, /\.dshbce-btn\s*\{[^}]*border-radius: var\(--radius-md, 6px\)/)
+    assert.match(STYLE, /\.dshbce-ring\s*\{[^}]*border-radius: var\(--radius-md, 6px\)/)
+    assert.doesNotMatch(STYLE, /border-radius: 50%/)
     assert.match(STYLE, /scale\(0\.96\)/)
     assert.match(STYLE, /@property --dshbce-from/)
     assert.match(STYLE, /\.dshbce-ring\s*\{[^}]*z-index:\s*2/)
@@ -56,6 +59,12 @@ describe('carried copy and visuals', () => {
     assert.match(STYLE, /var\(--muted-foreground, #8b8b8b\)/)
     assert.match(STYLE, /prefers-reduced-motion: reduce/)
     assert.match(ui, /aria-live': 'polite'/)
+  })
+
+  it('clears finished statuses, including errors, but never busy', () => {
+    assert.equal(STATUS_CLEAR_MS.ok, 3500)
+    assert.equal(STATUS_CLEAR_MS.error, 5000)
+    assert.equal(STATUS_CLEAR_MS.busy, undefined)
   })
 })
 

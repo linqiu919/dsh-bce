@@ -213,18 +213,21 @@ export function canRestore(restore, sessionId, draft, running) {
     && draft !== restore.original
 }
 
+/** How long a finished status stays next to the wand; busy and idle never auto-clear. */
+export const STATUS_CLEAR_MS = { ok: 3500, error: 5000 }
+
 export const STYLE = `
 .dshbce-wrap {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 26px;
+  height: 28px;
   max-width: 280px;
 }
 .dshbce-control {
   position: relative;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   flex: none;
 }
 .dshbce-btn {
@@ -234,11 +237,11 @@ export const STYLE = `
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border: none;
-  border-radius: 50%;
+  border-radius: var(--radius-md, 6px);
   background: var(--secondary, var(--muted, rgba(15, 23, 42, 0.05)));
   color: var(--muted-foreground);
   cursor: pointer;
@@ -260,15 +263,17 @@ export const STYLE = `
   background: var(--secondary, var(--muted, rgba(15, 23, 42, 0.05)));
 }
 .dshbce-icon {
-  width: 13px;
-  height: 13px;
+  width: 14px;
+  height: 14px;
   display: block;
 }
 .dshbce-ring {
   position: absolute;
   z-index: 2;
   inset: 0;
-  border-radius: 50%;
+  box-sizing: border-box;
+  padding: 1.5px;
+  border-radius: var(--radius-md, 6px);
   pointer-events: none;
   opacity: 0;
 }
@@ -287,8 +292,10 @@ export const STYLE = `
     rgba(168, 85, 247, 0.4) 335deg,
     transparent 360deg
   );
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 calc(100% - 1px));
-          mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 calc(100% - 1px));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask-composite: exclude;
 }
 .dshbce-btn[data-busy='true'] {
   opacity: 1;
@@ -341,14 +348,14 @@ export const STYLE = `
   }
 }
 .dshbce-restore {
-  height: 26px;
+  height: 28px;
   padding: 0 8px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md, 6px);
   background: transparent;
   color: var(--muted-foreground);
   font-size: 11px;
-  line-height: 26px;
+  line-height: 28px;
   cursor: pointer;
 }
 .dshbce-restore:hover {
@@ -426,19 +433,28 @@ export function onLoad(enso) {
     const lock = React.useRef(false)
     const draftRef = React.useRef(text)
     draftRef.current = text
+    const levelRef = React.useRef(level)
+    levelRef.current = level
     const snap = React.useSyncExternalStore(subscribeRestore, getRestore, getRestore)
     const lang = pickLocale(enso)
     const table = tables[lang]
     void localeTick
 
     React.useEffect(() => {
-      if (level !== 'ok') return undefined
+      const delay = STATUS_CLEAR_MS[level]
+      if (delay === undefined) return undefined
       const timer = window.setTimeout(() => {
         setStatus('')
         setLevel('idle')
-      }, 3500)
+      }, delay)
       return () => { window.clearTimeout(timer) }
-    }, [level])
+    }, [level, status])
+
+    React.useEffect(() => {
+      if (levelRef.current !== 'error') return
+      setStatus('')
+      setLevel('idle')
+    }, [text])
 
     React.useEffect(() => {
       const bump = () => { setLocaleTick((value) => value + 1) }

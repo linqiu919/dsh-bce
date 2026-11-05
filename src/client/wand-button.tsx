@@ -55,6 +55,9 @@ type WorkspaceRef = { path: string | undefined; sessionId: string | undefined }
 
 type StatusLevel = 'idle' | 'busy' | 'ok' | 'error'
 
+/** How long a finished status stays next to the wand; busy and idle never auto-clear. */
+const STATUS_CLEAR_MS: Partial<Record<StatusLevel, number>> = { ok: 3500, error: 5000 }
+
 function nonEmpty(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined
 }
@@ -198,6 +201,8 @@ function WandButton(props: WandProps & {
   const draft = typeof draftFromHook === 'string' ? draftFromHook : (props.input?.draft ?? '')
   const draftRef = React.useRef(draft)
   draftRef.current = draft
+  const levelRef = React.useRef(level)
+  levelRef.current = level
   const extras = { sessions: sessionsStore, workspaces: workspacesStore }
   const sessionId = nonEmpty(props.sessionId)
   const hooked: HookedPaths = {
@@ -216,13 +221,20 @@ function WandButton(props: WandProps & {
   }
 
   React.useEffect(() => {
-    if (level !== 'ok') return
+    const delay = STATUS_CLEAR_MS[level]
+    if (delay === undefined) return
     const timer = window.setTimeout(() => {
       setStatus('')
       setLevel('idle')
-    }, 3500)
+    }, delay)
     return () => { window.clearTimeout(timer) }
-  }, [level])
+  }, [level, status])
+
+  React.useEffect(() => {
+    if (levelRef.current !== 'error') return
+    setStatus('')
+    setLevel('idle')
+  }, [draft])
 
   const onClick = async () => {
     if (lock.current || empty) return

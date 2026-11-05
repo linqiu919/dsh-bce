@@ -26,9 +26,14 @@
 ## 演示
 
 <div align="center">
-  <img src="docs/demo.gif" alt="点击增强图标，等待索引完成后，草稿被替换为增强后的提示词" width="100%" />
+  <img src="docs/demo.gif" alt="DeepSeek Harness：点击增强图标，等待索引完成后，草稿被替换为增强后的提示词" width="100%" />
   <br />
-  <sub>1.5 倍速播放 · <a href="docs/demo.mp4">下载 MP4</a></sub>
+  <sub>DeepSeek Harness · 2 倍速播放 · <a href="docs/demo.mp4">下载 MP4</a></sub>
+  <br />
+  <br />
+  <img src="docs/demo-enso.gif" alt="EnsoCode：输入框里同款增强图标，结合代码上下文改写草稿" width="100%" />
+  <br />
+  <sub>EnsoCode · 2 倍速播放 · <a href="docs/demo-enso.mp4">下载 MP4</a></sub>
 </div>
 
 ## 功能

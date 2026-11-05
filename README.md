@@ -26,9 +26,14 @@ English · [简体中文](README.zh.md)
 ## Demo
 
 <div align="center">
-  <img src="docs/demo.gif" alt="Click the enhance icon, wait for indexing, and the draft is replaced by the enhanced prompt" width="100%" />
+  <img src="docs/demo.gif" alt="DeepSeek Harness: click the enhance icon, wait for indexing, and the draft is replaced by the enhanced prompt" width="100%" />
   <br />
-  <sub>Played at 1.5× speed · <a href="docs/demo.mp4">Download MP4</a></sub>
+  <sub>DeepSeek Harness · 2× speed · <a href="docs/demo.mp4">Download MP4</a></sub>
+  <br />
+  <br />
+  <img src="docs/demo-enso.gif" alt="EnsoCode: the same enhance icon in the composer rewrites the draft with code context" width="100%" />
+  <br />
+  <sub>EnsoCode · 2× speed · <a href="docs/demo-enso.mp4">Download MP4</a></sub>
 </div>
 
 ## Features

@@ -1,6 +1,6 @@
 /**
  * dsh-bce host half: discover the configured bce-tool MCP tools and proxy
- * search_context + enhance_prompt for the composer magic wand.
+ * search_context + enhance_prompt for the composer enhance icon.
  */
 
 import type { Context } from '@deepseek-ai/cordis'

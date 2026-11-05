@@ -70,7 +70,7 @@ function fetchRouteFor(
 }
 
 /**
- * Register Host RPC for the wand button.
+ * Register Host RPC for the enhance icon.
  * Prefers exact Fetch routes (DSH 0.1.5+); falls back to `/api` intercept (0.1.1).
  * Headless profiles without `connection` skip registration.
  */

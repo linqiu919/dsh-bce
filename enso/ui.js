@@ -213,7 +213,7 @@ export function canRestore(restore, sessionId, draft, running) {
     && draft !== restore.original
 }
 
-/** How long a finished status stays next to the wand; busy and idle never auto-clear. */
+/** How long a finished status stays next to the enhance icon; busy and idle never auto-clear. */
 export const STATUS_CLEAR_MS = { ok: 3500, error: 5000 }
 
 export const STYLE = `
@@ -221,13 +221,13 @@ export const STYLE = `
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 28px;
+  height: 25px;
   max-width: 280px;
 }
 .dshbce-control {
   position: relative;
-  width: 28px;
-  height: 28px;
+  width: 25px;
+  height: 25px;
   flex: none;
 }
 .dshbce-btn {
@@ -237,8 +237,8 @@ export const STYLE = `
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 28px;
-  height: 28px;
+  width: 25px;
+  height: 25px;
   padding: 0;
   border: none;
   border-radius: var(--radius-md, 6px);
@@ -263,8 +263,8 @@ export const STYLE = `
   background: var(--secondary, var(--muted, rgba(15, 23, 42, 0.05)));
 }
 .dshbce-icon {
-  width: 14px;
-  height: 14px;
+  width: 12.5px;
+  height: 12.5px;
   display: block;
 }
 .dshbce-ring {
@@ -348,14 +348,14 @@ export const STYLE = `
   }
 }
 .dshbce-restore {
-  height: 28px;
+  height: 25px;
   padding: 0 8px;
   border: none;
   border-radius: var(--radius-md, 6px);
   background: transparent;
   color: var(--muted-foreground);
   font-size: 11px;
-  line-height: 28px;
+  line-height: 25px;
   cursor: pointer;
 }
 .dshbce-restore:hover {
@@ -392,7 +392,8 @@ function setRestore(next) {
   for (const listener of restoreListeners) listener()
 }
 
-function wandIcon(h) {
+/** BCE "B" with a four-point sparkle: the enhance icon. */
+function enhanceIcon(h) {
   return h('svg', {
     className: 'dshbce-icon',
     viewBox: '0 0 24 24',
@@ -404,14 +405,8 @@ function wandIcon(h) {
     'aria-hidden': true,
     focusable: 'false',
   },
-    h('path', { d: 'm21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72' }),
-    h('path', { d: 'm14 7 3 3' }),
-    h('path', { d: 'M5 6v4' }),
-    h('path', { d: 'M19 14v4' }),
-    h('path', { d: 'M10 2v2' }),
-    h('path', { d: 'M7 8H3' }),
-    h('path', { d: 'M21 16h-4' }),
-    h('path', { d: 'M11 3H9' }),
+    h('path', { d: 'M4 12h8.5a4 4 0 0 1 0 8H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h6a4 4 0 0 1 0 8' }),
+    h('path', { d: 'M19.5 1.5l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z', fill: 'currentColor', strokeWidth: '1' }),
   )
 }
 
@@ -540,7 +535,7 @@ export function onLoad(enso) {
           'aria-busy': busy,
           onMouseDown: (event) => { event.preventDefault() },
           onClick: () => { void onClick() },
-        }, wandIcon(h)),
+        }, enhanceIcon(h)),
       ),
       status.length > 0 ? h('span', { className: 'dshbce-status', 'data-level': level }, status) : null,
       showRestore ? h('button', {

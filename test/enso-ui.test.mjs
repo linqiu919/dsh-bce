@@ -25,7 +25,7 @@ function composer(snap, replace = async () => ({ rev: 'r2' })) {
 }
 
 describe('carried copy and visuals', () => {
-  it('keeps every DSH wand string except the Enso timeout copy', () => {
+  it('keeps every DSH enhance-icon string except the Enso timeout copy', () => {
     const adapted = new Set(['wand.timeout', 'wand.indexTimeout'])
     for (const match of locales.matchAll(/'(wand\.[^']+)': '([^']*)'/g)) {
       if (adapted.has(match[1])) continue
@@ -36,11 +36,14 @@ describe('carried copy and visuals', () => {
     assert.match(ui, /索引用尽了与增强共用的 90 秒/)
   })
 
-  it('keeps the wand paths, the ring, and the theme fallbacks', () => {
-    const path = wand.match(/d="(m21\.64[^"]+)"/)?.[1]
-    assert.ok(path)
-    assert.equal(ui.includes(path), true)
-    assert.match(STYLE, /\.dshbce-btn\s*\{[^}]*width: 28px/)
+  it('keeps the enhance icon paths, the ring, and the theme fallbacks', () => {
+    const paths = [...wand.matchAll(/<path d="([^"]+)"/g)].map((match) => match[1])
+    assert.equal(paths.length, 2)
+    for (const path of paths) assert.equal(ui.includes(path), true, path)
+    assert.match(paths[0], /^M4 12h8\.5/)
+    assert.doesNotMatch(ui, /m21\.64/)
+    assert.match(STYLE, /\.dshbce-btn\s*\{[^}]*width: 25px/)
+    assert.match(STYLE, /\.dshbce-icon\s*\{[^}]*width: 12\.5px/)
     assert.match(STYLE, /\.dshbce-btn\s*\{[^}]*border-radius: var\(--radius-md, 6px\)/)
     assert.match(STYLE, /\.dshbce-ring\s*\{[^}]*border-radius: var\(--radius-md, 6px\)/)
     assert.doesNotMatch(STYLE, /border-radius: 50%/)
@@ -209,7 +212,7 @@ describe('enhanceDraft', () => {
 })
 
 describe('onLoad', () => {
-  it('registers the wand on composer.left and removes its style tag', async () => {
+  it('registers the enhance icon on composer.left and removes its style tag', async () => {
     const removed = []
     const style = { dataset: {}, textContent: '', remove() { removed.push(true) } }
     const previous = globalThis.document

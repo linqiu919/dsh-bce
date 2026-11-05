@@ -158,7 +158,7 @@ dsh plugin --profile web add "$(pwd)"
 
 ## EnsoCode
 
-同一枚魔棒也作为 [EnsoCode](https://github.com/J3n5en/EnsoCode) 插件放在 [`enso/`](enso/)。外观和交互与 DeepSeek Harness 版一致：26px 圆形按钮、锥形渐变光环、状态颜色、还原，以及中英文案。底层换成 Enso 的插件 API，不再走 DSH Host RPC。需要 EnsoCode **0.2.13** 或更高版本。`enso/` 里是可直接安装的 ESM（含 `icon.png`），从 GitHub 安装时不必构建本包。Enso 0.2.14 会在设置里显示这张图标。
+同一个增强图标也作为 [EnsoCode](https://github.com/J3n5en/EnsoCode) 插件放在 [`enso/`](enso/)。交互与 DeepSeek Harness 版一致：带星芒的 B 字图标、锥形渐变光环、状态颜色、还原，以及中英文案；按钮为 25px 圆角方形，与 Enso 输入框的原生按钮协调。底层换成 Enso 的插件 API，不再走 DSH Host RPC。需要 EnsoCode **0.2.13** 或更高版本。`enso/` 里是可直接安装的 ESM（含 `icon.png`），从 GitHub 安装时不必构建本包。Enso 0.2.14 会在设置里显示这张图标。
 
 ### 1. 注册 bce-tool MCP
 
@@ -192,7 +192,7 @@ enso-server plugin enable dsh.bce
 
 ### 3. 使用
 
-打开项目，在输入框写入非空草稿，点击左侧的魔棒。**还原** 写回这一轮连续增强之前的第一份草稿；中间没有改过字时，再次增强仍保留那一份原文。
+打开项目，在输入框写入非空草稿，点击左侧的增强图标。**还原** 写回这一轮连续增强之前的第一份草稿；中间没有改过字时，再次增强仍保留那一份原文。
 
 ### 和 DeepSeek Harness 版的差异
 
@@ -202,7 +202,7 @@ enso-server plugin enable dsh.bce
 | 工作区 | 会话 cwd 与工作区注册表 | 会话的 `projectRoot`。没有本机项目时提示 **请先打开一个工作区。** |
 | 写回草稿 | `setDraft`（不进撤销栈） | `replaceDraft`，并核对点击前读到的 generation / rev。草稿在此期间被改过，或含有文件、会话引用时，不会覆盖。 |
 | 索引与增强时限 | 索引走 MCP `toolCallTimeoutMs`，重写在 90 秒中止 | 整次点击共用 90 秒（`timeoutMs: 90000`）。插件提前 1.5 秒返回，以便界面显示明确的超时文案。`mcp.call` 仍然没有取消参数，进行中的工具要等这 90 秒的宿主预算触发后才会被中止。 |
-| 含引用或超过 32KB 的草稿 | `setDraft` 直接写文本 | `readDraft` 只给纯文本和 `hasReferences`。没有分段、补丁或部分编辑接口，`replaceDraft` 在草稿含有文件或会话引用时直接拒绝，`setText` 会丢掉引用卡片。魔棒不改草稿，并提供 **复制增强结果**（宿主剪贴板，上限 1MB）。 |
+| 含引用或超过 32KB 的草稿 | `setDraft` 直接写文本 | `readDraft` 只给纯文本和 `hasReferences`。没有分段、补丁或部分编辑接口，`replaceDraft` 在草稿含有文件或会话引用时直接拒绝，`setText` 会丢掉引用卡片。此时插件不改草稿，并提供 **复制增强结果**（宿主剪贴板，上限 1MB）。 |
 | 语言 | profile 语言（zh / en） | 宿主若提供 `enso.locale` 则用它。Enso 0.2.13 没有这项，因此先看页面语言，再看浏览器语言。 |
 | 安装 | `dsh plugin add` | 上面的 GitHub 目录链接。安装和启用是两步。 |
 

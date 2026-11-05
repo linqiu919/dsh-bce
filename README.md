@@ -158,7 +158,7 @@ dsh plugin --profile web add "$(pwd)"
 
 ## EnsoCode
 
-The same wand is also an [EnsoCode](https://github.com/J3n5en/EnsoCode) plugin in [`enso/`](enso/). It keeps the DeepSeek Harness look and interaction — the 26px round button, the conic-gradient ring, status colors, restore, and the zh/en copy — and calls Enso's plugin APIs instead of the DSH host RPC. It needs EnsoCode **0.2.13** or newer. The files in `enso/` are plain ESM, including `icon.png`, so installing from GitHub does not build this package. Enso 0.2.14 shows that icon in Settings.
+The same enhance icon is also an [EnsoCode](https://github.com/J3n5en/EnsoCode) plugin in [`enso/`](enso/). It keeps the DeepSeek Harness interaction — the sparkle "B" icon, the conic-gradient ring, status colors, restore, and the zh/en copy — uses a 25px rounded-square button that matches Enso's native composer buttons, and calls Enso's plugin APIs instead of the DSH host RPC. It needs EnsoCode **0.2.13** or newer. The files in `enso/` are plain ESM, including `icon.png`, so installing from GitHub does not build this package. Enso 0.2.14 shows that icon in Settings.
 
 ### 1. Register the bce-tool MCP
 
@@ -192,7 +192,7 @@ The id is `dsh.bce`. Enso requires a dotted reverse-DNS id (`^[a-z][a-z0-9]*(\.[
 
 ### 3. Use it
 
-Open a project, type a non-empty draft, and click the wand on the left of the composer. **Restore original** puts back the first draft of this enhancement chain. Another click, without editing in between, keeps that same original.
+Open a project, type a non-empty draft, and click the enhance icon on the left of the composer. **Restore original** puts back the first draft of this enhancement chain. Another click, without editing in between, keeps that same original.
 
 ### Differences from the DeepSeek Harness build
 
@@ -202,7 +202,7 @@ Open a project, type a non-empty draft, and click the wand on the left of the co
 | Workspace | Session cwd and the workspace registry | The session's `projectRoot`. A session with no local project shows **Open a workspace first.** |
 | Draft write | `setDraft` (outside the undo stack) | `replaceDraft`, checked against the generation and rev read before the call. If the draft changed, or it contains file or session references, it is left as it is. |
 | Index and enhance budget | Indexing follows MCP `toolCallTimeoutMs`; the rewrite is aborted at 90s | One 90s cap for the whole click (`timeoutMs: 90000`). The plugin reports the timeout 1.5s early so the message stays specific. `mcp.call` still has no abort handle, so the in-flight tool is cancelled when that 90s host budget fires. |
-| Drafts with references, or over 32KB | `setDraft` writes the text | `readDraft` returns plain text only, plus `hasReferences`. There is no segment, patch, or partial-edit API, and `replaceDraft` refuses drafts that contain file or session references. `setText` would drop the chips. The wand leaves the draft alone and offers **Copy enhanced text** (host clipboard, 1MB). |
+| Drafts with references, or over 32KB | `setDraft` writes the text | `readDraft` returns plain text only, plus `hasReferences`. There is no segment, patch, or partial-edit API, and `replaceDraft` refuses drafts that contain file or session references. `setText` would drop the chips. The plugin then leaves the draft alone and offers **Copy enhanced text** (host clipboard, 1MB). |
 | Language | Profile locale (zh / en) | `enso.locale` when the host exposes one. Enso 0.2.13 does not, so the button uses the page language, then the browser language. |
 | Install | `dsh plugin add` | The GitHub directory link above. Install and enable are separate steps. |
 

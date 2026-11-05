@@ -1,4 +1,4 @@
-/** Shared wire contract between the Host RPC and the browser wand. */
+/** Shared wire contract between the Host RPC and the composer enhance icon. */
 
 export const RPC_CHANNEL = '/api'
 export const RPC_ENDPOINT = 'dsh-bce.enhance'

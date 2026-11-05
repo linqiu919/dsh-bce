@@ -55,7 +55,7 @@ type WorkspaceRef = { path: string | undefined; sessionId: string | undefined }
 
 type StatusLevel = 'idle' | 'busy' | 'ok' | 'error'
 
-/** How long a finished status stays next to the wand; busy and idle never auto-clear. */
+/** How long a finished status stays next to the enhance icon; busy and idle never auto-clear. */
 const STATUS_CLEAR_MS: Partial<Record<StatusLevel, number>> = { ok: 3500, error: 5000 }
 
 function nonEmpty(value: unknown): string | undefined {
@@ -161,7 +161,8 @@ function parseEnhanceResult(value: unknown): RpcResult<EnhanceOk> | undefined {
   return undefined
 }
 
-function WandIcon(): React.ReactElement {
+/** BCE "B" with a four-point sparkle: the enhance icon. */
+function EnhanceIcon(): React.ReactElement {
   return (
     <svg
       className="dshbce-icon"
@@ -174,14 +175,8 @@ function WandIcon(): React.ReactElement {
       aria-hidden="true"
       focusable="false"
     >
-      <path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72" />
-      <path d="m14 7 3 3" />
-      <path d="M5 6v4" />
-      <path d="M19 14v4" />
-      <path d="M10 2v2" />
-      <path d="M7 8H3" />
-      <path d="M21 16h-4" />
-      <path d="M11 3H9" />
+      <path d="M4 12h8.5a4 4 0 0 1 0 8H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h6a4 4 0 0 1 0 8" />
+      <path d="M19.5 1.5l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z" fill="currentColor" strokeWidth="1" />
     </svg>
   )
 }
@@ -317,7 +312,7 @@ function WandButton(props: WandProps & {
           onMouseDown={(event) => { event.preventDefault() }}
           onClick={() => { void onClick() }}
         >
-          <WandIcon />
+          <EnhanceIcon />
         </button>
       </span>
       {status.length > 0 ? (

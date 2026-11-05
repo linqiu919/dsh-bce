@@ -3,7 +3,7 @@
   "id": "dsh.bce",
   "name": "BCE Prompt Enhance",
   "version": "0.1.5",
-  "description": "在输入框左侧提供增强图标：通过已配置的 bce-tool MCP 增量索引当前项目，并把草稿改写为带代码上下文的提示词。交互与 dsh-bce 一致。",
+  "description": "Better Context Engine 提示词增强：增量索引项目，精准补全代码上下文，让提问更清楚、回答更准确。",
   "icon": "icon.png",
   "engines": { "enso": ">=0.2.13" },
   "main": "main.mjs",

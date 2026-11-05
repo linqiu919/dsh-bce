@@ -3,7 +3,7 @@
   "id": "dsh.bce",
   "name": "BCE Prompt Enhance",
   "version": "0.1.5",
-  "description": "Composer enhance icon that incrementally indexes the current project through the configured bce-tool MCP and rewrites the draft. Same interaction as dsh-bce, hosted by EnsoCode.",
+  "description": "在输入框左侧提供增强图标：通过已配置的 bce-tool MCP 增量索引当前项目，并把草稿改写为带代码上下文的提示词。交互与 dsh-bce 一致。",
   "icon": "icon.png",
   "engines": { "enso": ">=0.2.13" },
   "main": "main.mjs",
@@ -15,8 +15,8 @@
     "configuration": [
       {
         "key": "server",
-        "title": "MCP server",
-        "description": "Optional MCP server name. Leave empty to prefer a server whose name contains \"bce\", otherwise the first server that provides enhance_prompt."
+        "title": "MCP 服务",
+        "description": "可选，填写 MCP 服务名称。留空时优先使用名称含 \"bce\" 的服务，否则使用第一个提供 enhance_prompt 的服务。"
       }
     ]
   }

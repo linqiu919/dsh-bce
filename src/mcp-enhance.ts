@@ -153,18 +153,57 @@ function isAbortError(error: unknown): boolean {
   return /abort|timeout/i.test(message)
 }
 
+interface LegacyToolRuntime {
+  execute(exec: { callId: string; name: string; arguments: Record<string, unknown>; signal: AbortSignal }): Promise<ToolExecutionResult>
+}
+
+/** DSH 0.2.2+: `execute` takes a raw call batch whose arguments are JSON strings. */
+interface BatchToolRuntime {
+  execute(input: {
+    calls: readonly { type: 'tool-call'; id: string; name: string; arguments: string }[]
+    signal: AbortSignal
+  }): Promise<unknown>
+}
+
+/** `executable` and `resolve` ship together with the batch-only `execute` (0.2.2-alpha.2). */
+function usesBatchExecute(tools: unknown): boolean {
+  const runtime = tools as { executable?: unknown; resolve?: unknown }
+  return typeof runtime.executable === 'function' || typeof runtime.resolve === 'function'
+}
+
+function batchResultFor(batch: unknown, callId: string): ToolExecutionResult | undefined {
+  const results = asRecord(batch)?.results
+  if (!Array.isArray(results)) return undefined
+  const row = results.find((entry) => asRecord(entry)?.callId === callId) ?? (results.length === 1 ? results[0] : undefined)
+  const result = asRecord(row)?.result
+  return asRecord(result) === undefined ? undefined : result as ToolExecutionResult
+}
+
 async function callTool(
   ctx: Context,
   name: string,
   args: Record<string, unknown>,
   signal: AbortSignal,
 ): Promise<ToolExecutionResult> {
-  return ctx.tools.execute({
-    callId: `dsh-bce-${Date.now()}-${Math.random().toString(16).slice(2)}` as never,
-    name,
-    arguments: args,
-    signal,
-  })
+  const callId = `dsh-bce-${Date.now()}-${Math.random().toString(16).slice(2)}`
+  if (!usesBatchExecute(ctx.tools)) {
+    return (ctx.tools as unknown as LegacyToolRuntime).execute({ callId, name, arguments: args, signal })
+  }
+  let batch: unknown
+  try {
+    batch = await (ctx.tools as unknown as BatchToolRuntime).execute({
+      calls: [{ type: 'tool-call', id: callId, name, arguments: JSON.stringify(args) }],
+      signal,
+    })
+  } catch (error) {
+    // ToolBatchExecutionError keeps already committed outcomes on `partial`.
+    const partial = batchResultFor(asRecord(error)?.partial, callId)
+    if (partial !== undefined) return partial
+    throw error
+  }
+  const result = batchResultFor(batch, callId)
+  if (result === undefined) throw new Error(`${name}: tool batch returned no result`)
+  return result
 }
 
 export async function enhancePrompt(

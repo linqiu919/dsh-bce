@@ -6,7 +6,7 @@
 
 **Context-aware prompt enhancement for the DeepSeek Harness composer, powered by your Better Context Engine MCP.**
 
-[![npm](https://img.shields.io/npm/v/dsh-bce?color=4D6BFE)](https://www.npmjs.com/package/dsh-bce) [![License](https://img.shields.io/badge/license-MIT-3DA639)](#license) [![Node.js](https://img.shields.io/badge/node-%5E22.19%20%7C%7C%20%3E%3D24-339933?logo=node.js&logoColor=white)](#requirements) [![Platform](https://img.shields.io/badge/DeepSeek%20Harness-web%20%7C%20Desktop-1F2937)](https://github.com/deepseek-ai/deepseek-harness)
+[![npm](https://img.shields.io/npm/v/dsh-bce?color=4D6BFE)](https://www.npmjs.com/package/dsh-bce) [![License](https://img.shields.io/badge/license-MIT-3DA639)](#license) [![Node.js](https://img.shields.io/badge/node-%5E22.19%20%7C%7C%20%3E%3D24-339933?logo=node.js&logoColor=white)](#requirements) [![Platform](https://img.shields.io/badge/DeepSeek%20Harness-web%20%7C%20Desktop-1F2937)](https://github.com/deepseek-ai/deepseek-harness) [![DSH](https://img.shields.io/badge/DSH-0.1.1--rc.2%20~%200.2.2--rc.1-4D6BFE)](#requirements)
 
 English · [简体中文](README.zh.md)
 
@@ -82,7 +82,7 @@ sequenceDiagram
 | Component | Constraint |
 | :--- | :--- |
 | Node.js | `^22.19` or `>=24` |
-| DeepSeek Harness | web CLI or official Desktop |
+| DeepSeek Harness | `0.1.1-rc.2` – `0.2.2-rc.1`, web CLI or official Desktop |
 | BCE | Reachable HTTP API and a valid token |
 | bce-tool MCP | Same profile as the plugin, with `--no-webbrowser-enhance-prompt` |
 | Workspace | Git repository, unless the MCP is started with `--allow-non-git` |

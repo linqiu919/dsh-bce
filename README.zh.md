@@ -6,7 +6,7 @@
 
 **为 DeepSeek Harness Composer 提供基于工作区上下文的提示增强，复用你已配置的 Better Context Engine MCP。**
 
-[![npm](https://img.shields.io/npm/v/dsh-bce?color=4D6BFE)](https://www.npmjs.com/package/dsh-bce) [![License](https://img.shields.io/badge/license-MIT-3DA639)](#许可) [![Node.js](https://img.shields.io/badge/node-%5E22.19%20%7C%7C%20%3E%3D24-339933?logo=node.js&logoColor=white)](#环境要求) [![Platform](https://img.shields.io/badge/DeepSeek%20Harness-web%20%7C%20Desktop-1F2937)](https://github.com/deepseek-ai/deepseek-harness)
+[![npm](https://img.shields.io/npm/v/dsh-bce?color=4D6BFE)](https://www.npmjs.com/package/dsh-bce) [![License](https://img.shields.io/badge/license-MIT-3DA639)](#许可) [![Node.js](https://img.shields.io/badge/node-%5E22.19%20%7C%7C%20%3E%3D24-339933?logo=node.js&logoColor=white)](#环境要求) [![Platform](https://img.shields.io/badge/DeepSeek%20Harness-web%20%7C%20Desktop-1F2937)](https://github.com/deepseek-ai/deepseek-harness) [![DSH](https://img.shields.io/badge/DSH-0.1.1--rc.2%20~%200.2.2--rc.1-4D6BFE)](#环境要求)
 
 [English](README.md) · 简体中文
 
@@ -82,7 +82,7 @@ sequenceDiagram
 | 组件 | 约束 |
 | :--- | :--- |
 | Node.js | `^22.19` 或 `>=24` |
-| DeepSeek Harness | web CLI 或官方 Desktop |
+| DeepSeek Harness | `0.1.1-rc.2` – `0.2.2-rc.1`，web CLI 或官方 Desktop |
 | BCE | 可访问的 HTTP API 与有效 Token |
 | bce-tool MCP | 与插件位于同一 profile，并带 `--no-webbrowser-enhance-prompt` |
 | 工作区 | Git 仓库；非 Git 目录需 MCP 启用 `--allow-non-git` |

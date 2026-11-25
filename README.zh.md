@@ -217,7 +217,7 @@ Cmd/Ctrl+Z 仍然不能撤销被替换的草稿，请用 **还原**。
 
 同款增强图标也做成了 [Paseo](https://paseo.sh) 插件，在 [`paseo/`](paseo/) 目录。它把星芒 B 图标放在运行中 agent 的输入框工具栏，同样有 busy 光环、状态文字、还原和中英文案。daemon 和客户端都需要 Paseo **0.17.4** 或更高版本。
 
-Paseo 插件无法调用 Claude Code 或 Codex 自己持有的 MCP，所以插件会在 daemon 上单独启动一个 bce-tool：所有 agent 和窗口共用一个进程，第一次点击时启动，空闲 10 分钟后退出。它复用你已有的 bce 条目，不保存 Token。
+Paseo 插件无法调用 Claude Code 或 Codex 自己持有的 MCP，所以插件会在 daemon 上单独启动一个 bce-tool：所有 agent 和窗口共用一个进程，开始输入草稿时在后台预先启动，空闲 10 分钟后退出，不影响 Paseo 启动速度。它复用你已有的 bce 条目，不保存 Token。
 
 ### 1. 注册 bce-tool MCP
 

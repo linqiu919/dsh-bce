@@ -2,7 +2,7 @@ BCE Prompt Enhance adds an enhance icon to the composer of a running agent. Clic
 
 ## How it works
 
-Paseo plugins cannot call MCP servers that Claude Code or Codex own, so the plugin starts its own copy of your bce-tool MCP server on the daemon. It calls `search_context` to update the index and then `enhance_prompt` to rewrite the draft. Both calls share a 90 second limit. The bce-tool process starts on the first click, serves every agent and window on that daemon, and stops after 10 idle minutes.
+Paseo plugins cannot call MCP servers that Claude Code or Codex own, so the plugin starts its own copy of your bce-tool MCP server on the daemon. It calls `search_context` to update the index and then `enhance_prompt` to rewrite the draft. Both calls share a 90 second limit. The bce-tool process starts in the background when you begin typing a draft, so the first click does not wait for it. It serves every agent and window on that daemon and stops after 10 idle minutes. Nothing runs when Paseo starts.
 
 ## Setup
 

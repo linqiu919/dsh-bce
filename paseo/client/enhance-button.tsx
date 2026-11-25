@@ -13,7 +13,14 @@ import {
 import { Icon, copyText } from "@getpaseo/plugin/client/ui";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { AccessibilityInfo, Animated, Easing, Platform, Pressable, Text, View } from "react-native";
-import { MAX_AGENT_CANDIDATES, STATUS_CLEAR_MS, enhanceRpc } from "../shared/enhance";
+import {
+  MAX_AGENT_CANDIDATES,
+  STATUS_CLEAR_MS,
+  WARM_DELAY_MS,
+  WARM_THROTTLE_MS,
+  enhanceRpc,
+  warmRpc,
+} from "../shared/enhance";
 import { getClient } from "./context";
 import { enhanceIconSvg } from "./icon";
 import { messageKeyFor, messages, type MessageKey } from "./messages";
@@ -128,15 +135,23 @@ function BusyRing({ busy, size }: { busy: boolean; size: number }) {
 // `composers({ agentId })` only resolves agents on this composer's host, so other hosts drop out.
 const openAgents = { where: (agent: { status: string }) => agent.status !== "closed" };
 
+/** Last pre-start request, shared by every composer in this window. */
+let lastWarmAt = 0;
+
 export function EnhanceButton({ theme, layout }: PluginComposerItemProps) {
   const metrics = layout.platform === "web" ? POINTER : TOUCH;
   const SIZE = metrics.size;
   const composer = useComposer();
   const enhance = useRpc(enhanceRpc);
+  const warm = useRpc(warmRpc);
+  const warmRef = useRef(warm);
+  warmRef.current = warm;
   const { t } = useTranslation(messages);
 
   const agentRefs = useAgents(openAgents);
   const agentIds = useMemo(() => agentRefs.map((ref) => ref.id), [agentRefs]);
+  const agentIdsRef = useRef(agentIds);
+  agentIdsRef.current = agentIds;
 
   const [busy, setBusy] = useState(false);
   const [level, setLevel] = useState<Level>("idle");
@@ -166,6 +181,19 @@ export function EnhanceButton({ theme, layout }: PluginComposerItemProps) {
     }, STATUS_CLEAR_MS[level]);
     return () => clearTimeout(timer);
   }, [level, status]);
+
+  // Start bce-tool once typing begins, so the first click skips npx and the MCP handshake.
+  // Paseo startup does nothing; the daemon ignores this while another bce-tool is busy.
+  useEffect(() => {
+    if (empty || !supported || Date.now() - lastWarmAt < WARM_THROTTLE_MS) return undefined;
+    const timer = setTimeout(() => {
+      if (lock.current || Date.now() - lastWarmAt < WARM_THROTTLE_MS) return;
+      lastWarmAt = Date.now();
+      const agentIdsNow = matchingAgents(agentIdsRef.current, composerRef.current.prompt);
+      warmRef.current({ agentIds: agentIdsNow }).catch(() => undefined);
+    }, WARM_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [empty, supported]);
 
   // Editing the draft dismisses an error at once.
   useEffect(() => {

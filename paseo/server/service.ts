@@ -12,6 +12,7 @@ import {
   type bceSettings,
   type detectRpc,
   type enhanceRpc,
+  type warmRpc,
 } from "../shared/enhance";
 import { childEnv, describeLaunch, redact, resolveLaunch, secretsOf, type LaunchSpec } from "./launch";
 import { McpExitError, McpStdioClient, McpTimeoutError } from "./mcp-client";
@@ -19,6 +20,8 @@ import { McpExitError, McpStdioClient, McpTimeoutError } from "./mcp-client";
 type EnhanceInput = RpcInput<typeof enhanceRpc>;
 type EnhanceOutput = RpcOutput<typeof enhanceRpc>;
 type DetectOutput = RpcOutput<typeof detectRpc>;
+type WarmInput = RpcInput<typeof warmRpc>;
+type WarmOutput = RpcOutput<typeof warmRpc>;
 type Paseo = PluginHandlerContext["paseo"];
 type Failure = { ok: false; code: EnhanceErrorCode; message: string };
 
@@ -75,6 +78,33 @@ export class BceService {
     const spec = await this.launchSpec(undefined);
     if ("ok" in spec) return spec;
     return { ok: true, source: spec.source, server: spec.server, command: describeLaunch(spec) };
+  }
+
+  /**
+   * Start bce-tool while the user is still typing. Joins a start for the same command,
+   * but never replaces a running or starting bce-tool, so it cannot break an enhancement.
+   */
+  async warm(input: WarmInput, paseo: Paseo): Promise<WarmOutput> {
+    if (this.disposed) return { ready: false };
+    const root = input.agentIds.length > 0 ? await this.projectRoot(input.agentIds, paseo) : undefined;
+    const spec = await this.launchSpec(root !== undefined && !("ok" in root) ? root.path : undefined);
+    if ("ok" in spec || this.disposed) return { ready: false };
+
+    const busyElsewhere = (this.client?.alive || this.starting !== null || this.inflight > 0) && this.clientKey !== spec.key;
+    if (busyElsewhere) return { ready: false };
+    if (this.client?.alive) {
+      this.scheduleIdle();
+      return { ready: true };
+    }
+    try {
+      await this.ensureClient(spec);
+      return { ready: true };
+    } catch (error) {
+      console.error(`[dsh-bce] bce-tool pre-start failed: ${redact(errorText(error), secretsOf(spec))}`);
+      return { ready: false };
+    } finally {
+      this.scheduleIdle();
+    }
   }
 
   async enhance(input: EnhanceInput, paseo: Paseo): Promise<EnhanceOutput> {
@@ -215,14 +245,31 @@ export class BceService {
     );
   }
 
-  private async ensureClient(spec: LaunchSpec): Promise<McpStdioClient> {
-    if (this.disposed) throw new McpExitError("plugin is stopping");
-    if (this.client?.alive && this.clientKey === spec.key) return this.client;
+  private ensureClient(spec: LaunchSpec): Promise<McpStdioClient> {
+    if (this.disposed) return Promise.reject(new McpExitError("plugin is stopping"));
+    if (this.client?.alive && this.clientKey === spec.key) return Promise.resolve(this.client);
     if (this.starting && this.clientKey === spec.key) return this.starting;
-    await this.stopClient();
 
+    // Claim the slot before any await, so a click during a pre-start joins that start
+    // instead of spawning a second bce-tool.
+    const previous = this.client;
+    this.client = null;
     this.clientKey = spec.key;
+    const starting = this.startClient(spec, previous);
+    this.starting = starting;
+    const settle = () => {
+      if (this.starting === starting) this.starting = null;
+    };
+    starting.then(settle, settle);
+    return starting;
+  }
+
+  private async startClient(spec: LaunchSpec, previous: McpStdioClient | null): Promise<McpStdioClient> {
+    const replaced = () => this.disposed || this.clientKey !== spec.key;
+    if (previous) await previous.close();
     const env = await childEnv(spec);
+    if (replaced()) throw new McpExitError("bce-tool was replaced while starting");
+
     const client = new McpStdioClient(
       { command: spec.command, args: spec.args, env },
       CLIENT_VERSION,
@@ -230,27 +277,21 @@ export class BceService {
         if (this.client === client) this.client = null;
       },
     );
-    const starting = client.start(START_TIMEOUT_MS).then(
-      () => {
-        if (this.starting === starting) this.starting = null;
-        if (this.disposed || this.clientKey !== spec.key) {
-          void client.close();
-          throw new McpExitError("bce-tool was replaced while starting");
-        }
-        this.client = client;
-        console.log(`[dsh-bce] bce-tool ready (${spec.source}: ${spec.server})`);
-        return client;
-      },
-      async (error: unknown) => {
-        if (this.starting === starting) this.starting = null;
-        const stderr = client.stderr;
-        await client.close();
-        const reason = error instanceof McpTimeoutError ? `startup timed out (${START_TIMEOUT_MS / 1000}s)` : errorText(error);
-        throw new McpExitError(stderr.length > 0 ? `${reason}\n${stderr}` : reason);
-      },
-    );
-    this.starting = starting;
-    return starting;
+    try {
+      await client.start(START_TIMEOUT_MS);
+    } catch (error) {
+      const stderr = client.stderr;
+      await client.close();
+      const reason = error instanceof McpTimeoutError ? `startup timed out (${START_TIMEOUT_MS / 1000}s)` : errorText(error);
+      throw new McpExitError(stderr.length > 0 ? `${reason}\n${stderr}` : reason);
+    }
+    if (replaced()) {
+      await client.close();
+      throw new McpExitError("bce-tool was replaced while starting");
+    }
+    this.client = client;
+    console.log(`[dsh-bce] bce-tool ready (${spec.source}: ${spec.server})`);
+    return client;
   }
 
   private exitDetail(error: unknown, client: McpStdioClient): string {

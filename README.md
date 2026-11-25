@@ -225,7 +225,13 @@ Keep a stdio `bce` entry in Claude Code (`~/.claude.json`) or Codex (`~/.codex/c
 
 ### 2. Install
 
-Turn on **Settings → Plugins → Enable plugins** once, then install from GitHub:
+Turn on **Settings → Plugins → Enable plugins** once, then install it from the [Paseo plugin registry](https://paseo.sh/plugins) (search "BCE Prompt Enhance" in the app, or run):
+
+```bash
+paseo plugin add linqiu919/dsh-bce
+```
+
+The registry pins a reviewed commit, so it can lag behind `main`. To track `main` directly, install from GitHub:
 
 ```bash
 paseo plugin add github:linqiu919/dsh-bce:paseo

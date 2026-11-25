@@ -12,7 +12,7 @@ English · [简体中文](README.zh.md)
 
 <sub>Friends · <a href="https://github.com/J3n5en/EnsoCode"><img src="docs/ensocode.png" alt="" width="18" height="18" valign="middle" /> EnsoCode</a></sub>
 
-[Demo](#demo) · [Features](#features) · [How it works](#how-it-works) · [Installation](#installation) · [EnsoCode](#ensocode) · [Usage](#usage) · [FAQ](#faq)
+[Demo](#demo) · [Features](#features) · [How it works](#how-it-works) · [Installation](#installation) · [EnsoCode](#ensocode) · [Paseo](#paseo) · [Usage](#usage) · [FAQ](#faq)
 
 </div>
 
@@ -212,6 +212,47 @@ Open a project, type a non-empty draft, and click the enhance icon on the left o
 | Install | `dsh plugin add` | The GitHub directory link above. Install and enable are separate steps. |
 
 Cmd/Ctrl+Z still does not undo a replaced draft. Use **Restore original**.
+
+## Paseo
+
+The same enhance icon is also a [Paseo](https://paseo.sh) plugin in [`paseo/`](paseo/). It puts the sparkle "B" icon in the composer toolbar of a running agent, with the busy ring, status text, restore, and zh/en copy. It needs Paseo **0.17.4** or newer on the daemon and the app.
+
+Paseo plugins cannot call MCP servers that Claude Code or Codex own, so the plugin starts its own bce-tool on the daemon: one process for every agent and window, started on the first click and stopped after 10 idle minutes. It reuses your existing bce entry, so it stores no token.
+
+### 1. Register the bce-tool MCP
+
+Keep a stdio `bce` entry in Claude Code (`~/.claude.json`) or Codex (`~/.codex/config.toml`), as in [Installation](#installation). The plugin picks the entry whose name contains `bce` (Claude Code first) and adds `--no-webbrowser-enhance-prompt` itself. You can also set an entry name, or a full command line, in the plugin settings.
+
+### 2. Install
+
+Turn on **Settings → Plugins → Enable plugins** once, then install from GitHub:
+
+```bash
+paseo plugin add github:linqiu919/dsh-bce:paseo
+```
+
+From a local clone:
+
+```bash
+paseo plugin install /absolute/path/to/dsh-bce/paseo
+paseo plugin reload dsh-bce   # after editing the source
+```
+
+The id is `dsh-bce`. `paseo plugin ls` should show it as `running`; `paseo plugin logs dsh-bce` shows bce-tool start errors with secrets masked.
+
+### 3. Use it
+
+Open an agent that already has a message, type a draft, and click the enhance icon in the composer toolbar. **Settings → Plugins → BCE Prompt Enhance (cog) → Check** shows the exact command the plugin starts.
+
+### Differences from the DeepSeek Harness build
+
+| | DeepSeek Harness | Paseo |
+| :--- | :--- | :--- |
+| Slot | `conversation.input.left` | `addComposerItem` in the composer toolbar. Paseo decides the position and moves it to the overflow menu on phones and narrow windows. |
+| MCP | The host's `ctx.tools.execute` | Its own bce-tool child process over stdio, started from your Claude Code / Codex entry or the command in settings |
+| Workspace | Session cwd and the workspace registry | Paseo's composer API does not name its agent, so the plugin matches the draft against each running agent's composer and reads that agent's cwd. The draft composer of a new agent and the New workspace screen show a hint instead. |
+| Busy ring | CSS conic gradient | React Native animation with the same colors |
+| Install | `dsh plugin add` | `paseo plugin add` from GitHub or a local path |
 
 ## Usage
 

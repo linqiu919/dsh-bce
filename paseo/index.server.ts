@@ -1,6 +1,6 @@
 import type { PluginServerContext } from "@getpaseo/plugin/server";
 import { BceService } from "./server/service";
-import { bceSettings, detectRpc, enhanceRpc } from "./shared/enhance";
+import { bceSettings, detectRpc, enhanceRpc, warmRpc } from "./shared/enhance";
 
 export default function contribute(server: PluginServerContext) {
   const settings = server.registerSettings(bceSettings);
@@ -9,6 +9,7 @@ export default function contribute(server: PluginServerContext) {
 
   server.handle(enhanceRpc, (input, { paseo }) => service.enhance(input, paseo));
   server.handle(detectRpc, () => service.detect());
+  server.handle(warmRpc, (input, { paseo }) => service.warm(input, paseo));
 
   return async () => {
     unsubscribe();

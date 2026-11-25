@@ -2,7 +2,7 @@ BCE 提示词增强会在运行中 agent 的输入框里加一个增强图标。
 
 ## 工作方式
 
-Paseo 插件无法调用 Claude Code 或 Codex 自己持有的 MCP 服务，所以插件会在 daemon 上单独启动一个 bce-tool MCP 服务。它先调用 `search_context` 更新索引，再调用 `enhance_prompt` 改写草稿，两步共用 90 秒时限。bce-tool 进程在第一次点击时启动，供该 daemon 上的所有 agent 和窗口共用，空闲 10 分钟后自动退出。
+Paseo 插件无法调用 Claude Code 或 Codex 自己持有的 MCP 服务，所以插件会在 daemon 上单独启动一个 bce-tool MCP 服务。它先调用 `search_context` 更新索引，再调用 `enhance_prompt` 改写草稿，两步共用 90 秒时限。bce-tool 进程在你开始输入草稿时于后台预先启动，第一次点击无需再等它启动；它供该 daemon 上的所有 agent 和窗口共用，空闲 10 分钟后自动退出。Paseo 启动时插件不做任何事。
 
 ## 配置
 

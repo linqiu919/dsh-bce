@@ -9,6 +9,10 @@ export const START_TIMEOUT_MS = 60_000;
 export const STATUS_CLEAR_MS = { ok: 3_500, error: 5_000 } as const;
 /** Composer agents considered when matching the draft to its agent. */
 export const MAX_AGENT_CANDIDATES = 16;
+/** Typing pause before the composer asks the daemon to start bce-tool ahead of the click. */
+export const WARM_DELAY_MS = 800;
+/** Pre-start requests from the composers are sent at most this often. */
+export const WARM_THROTTLE_MS = 60_000;
 
 export const ERROR_CODES = [
   "empty_prompt",
@@ -47,6 +51,18 @@ export const enhanceRpc = defineRpc({
     }),
     failure,
   ]),
+});
+
+/**
+ * Start bce-tool before the first click, so the click does not pay for npx and the
+ * handshake. Best effort: never indexes, never replaces a running or starting bce-tool.
+ */
+export const warmRpc = defineRpc({
+  name: "bce.warm",
+  input: z.object({
+    agentIds: z.array(z.string()).max(MAX_AGENT_CANDIDATES),
+  }),
+  output: z.object({ ready: z.boolean() }),
 });
 
 /** Which bce-tool command the plugin would start. Secrets in the command are masked. */

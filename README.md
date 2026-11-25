@@ -217,7 +217,7 @@ Cmd/Ctrl+Z still does not undo a replaced draft. Use **Restore original**.
 
 The same enhance icon is also a [Paseo](https://paseo.sh) plugin in [`paseo/`](paseo/). It puts the sparkle "B" icon in the composer toolbar of a running agent, with the busy ring, status text, restore, and zh/en copy. It needs Paseo **0.17.4** or newer on the daemon and the app.
 
-Paseo plugins cannot call MCP servers that Claude Code or Codex own, so the plugin starts its own bce-tool on the daemon: one process for every agent and window, started on the first click and stopped after 10 idle minutes. It reuses your existing bce entry, so it stores no token.
+Paseo plugins cannot call MCP servers that Claude Code or Codex own, so the plugin starts its own bce-tool on the daemon: one process for every agent and window, started in the background once you begin typing a draft and stopped after 10 idle minutes. Paseo startup is not affected. It reuses your existing bce entry, so it stores no token.
 
 ### 1. Register the bce-tool MCP
 

@@ -225,7 +225,13 @@ Paseo 插件无法调用 Claude Code 或 Codex 自己持有的 MCP，所以插�
 
 ### 2. 安装
 
-先在 **设置 → 插件** 中打开插件总开关（只需一次），然后从 GitHub 安装：
+先在 **设置 → 插件** 中打开插件总开关（只需一次），然后从 [Paseo 插件市场](https://paseo.sh/plugins) 安装（在应用内搜索 “BCE 提示词增强”，或执行）：
+
+```bash
+paseo plugin add linqiu919/dsh-bce
+```
+
+市场锁定的是审核过的提交，可能落后于 `main`。想直接跟随 `main`，可以从 GitHub 安装：
 
 ```bash
 paseo plugin add github:linqiu919/dsh-bce:paseo

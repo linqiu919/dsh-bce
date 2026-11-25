@@ -12,7 +12,7 @@
 
 <sub>友链 · <a href="https://github.com/J3n5en/EnsoCode"><img src="docs/ensocode.png" alt="" width="18" height="18" valign="middle" /> EnsoCode</a></sub>
 
-[演示](#演示) · [功能](#功能) · [工作原理](#工作原理) · [安装](#安装) · [EnsoCode](#ensocode) · [使用](#使用) · [常见问题](#常见问题)
+[演示](#演示) · [功能](#功能) · [工作原理](#工作原理) · [安装](#安装) · [EnsoCode](#ensocode) · [Paseo](#paseo) · [使用](#使用) · [常见问题](#常见问题)
 
 </div>
 
@@ -212,6 +212,47 @@ enso-server plugin enable dsh.bce
 | 安装 | `dsh plugin add` | 上面的 GitHub 目录链接。安装和启用是两步。 |
 
 Cmd/Ctrl+Z 仍然不能撤销被替换的草稿，请用 **还原**。
+
+## Paseo
+
+同款增强图标也做成了 [Paseo](https://paseo.sh) 插件，在 [`paseo/`](paseo/) 目录。它把星芒 B 图标放在运行中 agent 的输入框工具栏，同样有 busy 光环、状态文字、还原和中英文案。daemon 和客户端都需要 Paseo **0.17.4** 或更高版本。
+
+Paseo 插件无法调用 Claude Code 或 Codex 自己持有的 MCP，所以插件会在 daemon 上单独启动一个 bce-tool：所有 agent 和窗口共用一个进程，第一次点击时启动，空闲 10 分钟后退出。它复用你已有的 bce 条目，不保存 Token。
+
+### 1. 注册 bce-tool MCP
+
+在 Claude Code（`~/.claude.json`）或 Codex（`~/.codex/config.toml`）中保留一个 stdio 的 `bce` 条目，配置方法见[安装](#安装)。插件会选名称含 `bce` 的条目（优先 Claude Code），并自动加上 `--no-webbrowser-enhance-prompt`。也可以在插件设置里指定条目名称，或直接填写完整命令行。
+
+### 2. 安装
+
+先在 **设置 → 插件** 中打开插件总开关（只需一次），然后从 GitHub 安装：
+
+```bash
+paseo plugin add github:linqiu919/dsh-bce:paseo
+```
+
+从本地克隆安装：
+
+```bash
+paseo plugin install /absolute/path/to/dsh-bce/paseo
+paseo plugin reload dsh-bce   # 修改源码后执行
+```
+
+插件 id 是 `dsh-bce`。`paseo plugin ls` 中应显示为 `running`；`paseo plugin logs dsh-bce` 可以查看 bce-tool 的启动错误，敏感信息已打码。
+
+### 3. 使用
+
+打开一个已经发过消息的 agent，输入草稿，点击输入框工具栏里的增强图标。**设置 → 插件 → BCE Prompt Enhance（齿轮）→ 检测** 可以查看插件实际启动的命令。
+
+### 和 DeepSeek Harness 版的差异
+
+| | DeepSeek Harness | Paseo |
+| :--- | :--- | :--- |
+| 插槽 | `conversation.input.left` | 输入框工具栏的 `addComposerItem`。位置由 Paseo 决定，手机和窄窗口中会收进溢出菜单。 |
+| MCP | 宿主的 `ctx.tools.execute` | 插件自己通过 stdio 启动的 bce-tool 子进程，命令来自 Claude Code / Codex 条目或设置页 |
+| 工作区 | 会话 cwd 与工作区注册表 | Paseo 的输入框 API 不提供所属 agent，插件用草稿文本匹配各运行中 agent 的输入框，再读取该 agent 的 cwd。新建 agent 的草稿框和新建工作区页面只显示提示。 |
+| busy 光环 | CSS conic 渐变 | 同色的 React Native 动画 |
+| 安装 | `dsh plugin add` | `paseo plugin add`，从 GitHub 或本地路径安装 |
 
 ## 使用
 

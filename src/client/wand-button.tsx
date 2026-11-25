@@ -285,6 +285,15 @@ function WandButton(props: WandProps & {
     && (restore.sessionId === undefined || restore.sessionId === sessionId)
     && draft !== restore.original
 
+  // Clearing the draft ends the enhancement chain, so Restore does not follow new text.
+  React.useEffect(() => {
+    if (draft.trim().length > 0 || busy) return
+    const current = getRestore()
+    if (current === undefined) return
+    if (current.sessionId !== undefined && current.sessionId !== sessionId) return
+    setRestore(undefined)
+  }, [draft, busy, sessionId])
+
   const onRestore = () => {
     if (restore === undefined || busy) return
     inputActions?.setDraft(restore.original)

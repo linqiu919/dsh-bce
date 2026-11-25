@@ -503,6 +503,15 @@ export function onLoad(enso) {
       }
     }
 
+    // Clearing the draft ends the enhancement chain, so Restore does not follow new text.
+    React.useEffect(() => {
+      if (text.trim().length > 0 || busy) return
+      const current = getRestore()
+      if (current === undefined || current === null) return
+      if (current.sessionId !== undefined && current.sessionId !== (sessionId ?? undefined)) return
+      setRestore(undefined)
+    }, [text, busy, sessionId])
+
     const onRestore = async () => {
       const current = getRestore()
       if (current === undefined || lock.current) return

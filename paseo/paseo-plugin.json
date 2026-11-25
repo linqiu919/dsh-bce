@@ -1,0 +1,14 @@
+{
+  "id": "dsh-bce",
+  "name": "BCE Prompt Enhance",
+  "description": "Adds a BCE enhance icon to the composer that indexes the workspace and rewrites the draft with code context.",
+  "icon": "icon.png",
+  "media": [],
+  "translations": {
+    "zh-CN": {
+      "name": "BCE 提示词增强",
+      "description": "在输入框加入 BCE 增强图标：增量索引当前项目，补全代码上下文后改写草稿。"
+    }
+  },
+  "requirements": { "paseo": ">=0.17.4" }
+}

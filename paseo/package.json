@@ -16,6 +16,7 @@
     "OVERVIEW.md",
     "OVERVIEW.*.md",
     "icon.png",
+    "assets/",
     "index.client.tsx",
     "index.server.ts",
     "client/",
